@@ -827,6 +827,31 @@ var config = {
 };
 var HOME = os.homedir();
 var MEMORY_FILE = path.join(HOME, ".browsr.json");
+var CONFIG_FILE = path.join(HOME, ".browsr-config.json");
+function loadConfig() {
+  try {
+    if (fs.existsSync(CONFIG_FILE)) {
+      return JSON.parse(fs.readFileSync(CONFIG_FILE, "utf8"));
+    }
+  } catch {
+  }
+  return {};
+}
+function saveConfig(cfg) {
+  try {
+    fs.writeFileSync(CONFIG_FILE, JSON.stringify(cfg, null, 2));
+  } catch {
+  }
+}
+function ensureApiKey() {
+  if (process.env.GROQ_API_KEY) return true;
+  const cfg = loadConfig();
+  if (cfg.apiKey) {
+    process.env.GROQ_API_KEY = cfg.apiKey;
+    return true;
+  }
+  return false;
+}
 var SYSTEM = `You are browsr, the fastest AI design tool. You create stunning HTML/CSS instantly.
 
 RULES:
@@ -1009,8 +1034,8 @@ var CMDS = {
   ${g("/bash CMD")}   Run command
   ${g("/model")}      Show/set model
   ${g("/stats")}      Show stats
-  ${g("/config")}     Show config
-  ${g("/set K V")}    Set config
+  ${g("/setkey")}     Update API key
+  ${g("/doctor")}     Check setup
   `),
   clear: () => {
     messages = [];
@@ -1135,12 +1160,28 @@ var CMDS = {
 `));
   },
   doctor: () => {
+    const cfg = loadConfig();
     console.log(g("\n  Check:"));
     console.log(`  ${process.env.GROQ_API_KEY ? gg("\u2713") : chalk5.red("\u2717")} GROQ_API_KEY`);
+    console.log(`  ${cfg.apiKey ? gg("\u2713") : gd("\u25CB")} Saved key in ~/.browsr-config.json`);
     console.log(`  ${gg("\u2713")} Node ${process.version}`);
     console.log(`  ${gg("\u2713")} Platform ${process.platform}`);
     console.log(`  ${gg("\u2713")} Model: ${config.model}`);
     console.log();
+  },
+  setkey: (a) => {
+    if (!a) {
+      console.log(g("\n  Usage: /setkey gsk_your_api_key\n"));
+      return;
+    }
+    if (a.startsWith("gsk_")) {
+      process.env.GROQ_API_KEY = a;
+      saveConfig({ apiKey: a });
+      _groq = null;
+      console.log(gg("\n  \u2713 API key saved\n"));
+    } else {
+      console.log(chalk5.red("\n  Invalid key format\n"));
+    }
   },
   version: () => console.log(g(`
   browsr v${VERSION}
@@ -1162,13 +1203,28 @@ async function startChat() {
   loadMemory();
   console.clear();
   banner();
-  if (!process.env.GROQ_API_KEY) {
-    console.log(chalk5.yellow(`  No GROQ_API_KEY found.`));
-    console.log(g(`  Get FREE key: https://console.groq.com`));
-    console.log(g(`  Then: export GROQ_API_KEY=your-key
-`));
-  }
   const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+  if (!ensureApiKey()) {
+    console.log(chalk5.yellow(`  No API key found. Let's set it up (one time only).
+`));
+    console.log(g(`  1. Get FREE key at: ${gg("https://console.groq.com")}`));
+    console.log(g(`  2. Paste it below:
+`));
+    await new Promise((resolve3) => {
+      rl.question(gg("  API Key: "), (key) => {
+        const trimmed = key.trim();
+        if (trimmed && trimmed.startsWith("gsk_")) {
+          process.env.GROQ_API_KEY = trimmed;
+          saveConfig({ apiKey: trimmed });
+          console.log(gg("\n  \u2713 Saved! You won't need to enter this again.\n"));
+        } else {
+          console.log(chalk5.red("\n  Invalid key. Get one at console.groq.com\n"));
+          process.exit(1);
+        }
+        resolve3();
+      });
+    });
+  }
   rl.on("close", () => {
     if (server) server.close();
     saveMemory();

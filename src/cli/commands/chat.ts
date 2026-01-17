@@ -62,6 +62,44 @@ const config = {
 // Paths
 const HOME = os.homedir();
 const MEMORY_FILE = path.join(HOME, '.browsr.json');
+const CONFIG_FILE = path.join(HOME, '.browsr-config.json');
+
+// ═══════════════════════════════════════════════════════════════
+// CONFIG - Save API key so users only enter once
+// ═══════════════════════════════════════════════════════════════
+
+interface Config {
+  apiKey?: string;
+}
+
+function loadConfig(): Config {
+  try {
+    if (fs.existsSync(CONFIG_FILE)) {
+      return JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf8'));
+    }
+  } catch {}
+  return {};
+}
+
+function saveConfig(cfg: Config) {
+  try {
+    fs.writeFileSync(CONFIG_FILE, JSON.stringify(cfg, null, 2));
+  } catch {}
+}
+
+function ensureApiKey(): boolean {
+  // Check env first
+  if (process.env.GROQ_API_KEY) return true;
+
+  // Check saved config
+  const cfg = loadConfig();
+  if (cfg.apiKey) {
+    process.env.GROQ_API_KEY = cfg.apiKey;
+    return true;
+  }
+
+  return false;
+}
 
 // ═══════════════════════════════════════════════════════════════
 // SYSTEM PROMPT - Optimized for quality + speed
@@ -289,8 +327,8 @@ const CMDS: Record<string, (a: string) => void> = {
   ${g('/bash CMD')}   Run command
   ${g('/model')}      Show/set model
   ${g('/stats')}      Show stats
-  ${g('/config')}     Show config
-  ${g('/set K V')}    Set config
+  ${g('/setkey')}     Update API key
+  ${g('/doctor')}     Check setup
   `),
 
   clear: () => { messages = []; html = null; console.clear(); banner(); },
@@ -375,12 +413,29 @@ const CMDS: Record<string, (a: string) => void> = {
   },
 
   doctor: () => {
+    const cfg = loadConfig();
     console.log(g('\n  Check:'));
     console.log(`  ${process.env.GROQ_API_KEY ? gg('✓') : chalk.red('✗')} GROQ_API_KEY`);
+    console.log(`  ${cfg.apiKey ? gg('✓') : gd('○')} Saved key in ~/.browsr-config.json`);
     console.log(`  ${gg('✓')} Node ${process.version}`);
     console.log(`  ${gg('✓')} Platform ${process.platform}`);
     console.log(`  ${gg('✓')} Model: ${config.model}`);
     console.log();
+  },
+
+  setkey: (a) => {
+    if (!a) {
+      console.log(g('\n  Usage: /setkey gsk_your_api_key\n'));
+      return;
+    }
+    if (a.startsWith('gsk_')) {
+      process.env.GROQ_API_KEY = a;
+      saveConfig({ apiKey: a });
+      _groq = null; // Reset client
+      console.log(gg('\n  ✓ API key saved\n'));
+    } else {
+      console.log(chalk.red('\n  Invalid key format\n'));
+    }
   },
 
   version: () => console.log(g(`\n  browsr v${VERSION}\n`)),
@@ -411,14 +466,29 @@ export async function startChat(): Promise<void> {
   console.clear();
   banner();
 
-  // Check for API key
-  if (!process.env.GROQ_API_KEY) {
-    console.log(chalk.yellow(`  No GROQ_API_KEY found.`));
-    console.log(g(`  Get FREE key: https://console.groq.com`));
-    console.log(g(`  Then: export GROQ_API_KEY=your-key\n`));
-  }
-
   const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+
+  // Check for API key - prompt if not found
+  if (!ensureApiKey()) {
+    console.log(chalk.yellow(`  No API key found. Let's set it up (one time only).\n`));
+    console.log(g(`  1. Get FREE key at: ${gg('https://console.groq.com')}`));
+    console.log(g(`  2. Paste it below:\n`));
+
+    await new Promise<void>((resolve) => {
+      rl.question(gg('  API Key: '), (key) => {
+        const trimmed = key.trim();
+        if (trimmed && trimmed.startsWith('gsk_')) {
+          process.env.GROQ_API_KEY = trimmed;
+          saveConfig({ apiKey: trimmed });
+          console.log(gg('\n  ✓ Saved! You won\'t need to enter this again.\n'));
+        } else {
+          console.log(chalk.red('\n  Invalid key. Get one at console.groq.com\n'));
+          process.exit(1);
+        }
+        resolve();
+      });
+    });
+  }
 
   rl.on('close', () => {
     if (server) server.close();
