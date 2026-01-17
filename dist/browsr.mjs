@@ -443,22 +443,22 @@ var MIME_TYPES = {
 };
 async function preview(path2, options) {
   const port = parseInt(options.port, 10) || 3e3;
-  const outputDir2 = path2 || "./output";
-  if (!existsSync(outputDir2)) {
-    console.error(chalk.red(`Directory not found: ${outputDir2}`));
+  const outputDir = path2 || "./output";
+  if (!existsSync(outputDir)) {
+    console.error(chalk.red(`Directory not found: ${outputDir}`));
     console.log(chalk.gray('Run "build create <prompt>" first to generate a design.'));
     process.exit(1);
   }
-  const indexPath = join2(outputDir2, "index.html");
+  const indexPath = join2(outputDir, "index.html");
   if (!existsSync(indexPath)) {
-    console.error(chalk.red(`No index.html found in ${outputDir2}`));
+    console.error(chalk.red(`No index.html found in ${outputDir}`));
     process.exit(1);
   }
   console.log(chalk.cyan("\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550"));
   console.log(chalk.white.bold("  DesignCraft Preview Server"));
   console.log(chalk.cyan("\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550"));
   console.log();
-  console.log(chalk.gray("  Serving:  ") + chalk.white(outputDir2));
+  console.log(chalk.gray("  Serving:  ") + chalk.white(outputDir));
   console.log(chalk.gray("  Local:    ") + chalk.cyan(`http://localhost:${port}`));
   console.log();
   console.log(chalk.gray("  Press Ctrl+C to stop"));
@@ -479,7 +479,7 @@ async function preview(path2, options) {
   }, 1000);
 </script>
 `;
-  const server = createServer((req, res) => {
+  const server2 = createServer((req, res) => {
     let filePath = req.url || "/";
     if (filePath === "/") {
       filePath = "/index.html";
@@ -495,7 +495,7 @@ async function preview(path2, options) {
       }
       return;
     }
-    const fullPath = join2(outputDir2, filePath);
+    const fullPath = join2(outputDir, filePath);
     if (!existsSync(fullPath)) {
       res.writeHead(404);
       res.end("Not Found");
@@ -517,7 +517,7 @@ async function preview(path2, options) {
       res.end("Server Error");
     }
   });
-  server.listen(port, () => {
+  server2.listen(port, () => {
     try {
       exec(`open http://localhost:${port}`);
     } catch {
@@ -548,13 +548,13 @@ async function create(prompt, options) {
     const design = await generate(archetype, prompt, options.style);
     spinner.succeed(chalk2.green(`Generated in ${(design.generationTime / 1e3).toFixed(1)}s`));
     spinner.start(chalk2.gray("Writing files..."));
-    const outputDir2 = options.output;
-    if (!existsSync2(outputDir2)) {
-      mkdirSync(outputDir2, { recursive: true });
+    const outputDir = options.output;
+    if (!existsSync2(outputDir)) {
+      mkdirSync(outputDir, { recursive: true });
     }
-    const htmlPath = join3(outputDir2, "index.html");
+    const htmlPath = join3(outputDir, "index.html");
     writeFileSync(htmlPath, design.html, "utf-8");
-    const metadataPath = join3(outputDir2, "design.json");
+    const metadataPath = join3(outputDir, "design.json");
     writeFileSync(
       metadataPath,
       JSON.stringify(
@@ -570,7 +570,7 @@ async function create(prompt, options) {
       ),
       "utf-8"
     );
-    spinner.succeed(chalk2.green(`Files written to ${outputDir2}/`));
+    spinner.succeed(chalk2.green(`Files written to ${outputDir}/`));
     console.log();
     console.log(chalk2.cyan("\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550"));
     console.log(chalk2.white.bold("  Design Generated Successfully!"));
@@ -590,7 +590,7 @@ async function create(prompt, options) {
     if (options.preview) {
       console.log(chalk2.yellow("Starting preview server..."));
       console.log();
-      await preview(outputDir2, { port: "3000" });
+      await preview(outputDir, { port: "3000" });
     }
   } catch (error) {
     spinner.fail(chalk2.red("Generation failed"));
@@ -653,10 +653,10 @@ function generateProjectName() {
 }
 async function deploy(path2, options) {
   const spinner = ora2();
-  const outputDir2 = path2 || "./output";
+  const outputDir = path2 || "./output";
   const projectName = options.name || generateProjectName();
-  if (!existsSync3(outputDir2)) {
-    console.error(chalk3.red(`Directory not found: ${outputDir2}`));
+  if (!existsSync3(outputDir)) {
+    console.error(chalk3.red(`Directory not found: ${outputDir}`));
     console.log(chalk3.gray('Run "build create <prompt>" first to generate a design.'));
     process.exit(1);
   }
@@ -673,12 +673,12 @@ async function deploy(path2, options) {
   console.log(chalk3.cyan("\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550"));
   console.log();
   console.log(chalk3.gray("  Project:  ") + chalk3.white(projectName));
-  console.log(chalk3.gray("  Source:   ") + chalk3.white(outputDir2));
+  console.log(chalk3.gray("  Source:   ") + chalk3.white(outputDir));
   console.log();
   try {
     spinner.start(chalk3.gray("Uploading to Cloudflare..."));
     const result = execSync(
-      `wrangler pages deploy ${outputDir2} --project-name=${projectName}`,
+      `wrangler pages deploy ${outputDir} --project-name=${projectName}`,
       { encoding: "utf-8" }
     );
     spinner.succeed(chalk3.green("Deployed successfully!"));
@@ -718,20 +718,20 @@ import chalk4 from "chalk";
 import ora3 from "ora";
 async function exportDesign(path2, options) {
   const spinner = ora3();
-  const outputDir2 = path2 || "./output";
-  const format = options.format || "pdf";
-  if (!existsSync4(outputDir2)) {
-    console.error(chalk4.red(`Directory not found: ${outputDir2}`));
+  const outputDir = path2 || "./output";
+  const format2 = options.format || "pdf";
+  if (!existsSync4(outputDir)) {
+    console.error(chalk4.red(`Directory not found: ${outputDir}`));
     console.log(chalk4.gray('Run "build create <prompt>" first to generate a design.'));
     process.exit(1);
   }
-  const indexPath = join4(outputDir2, "index.html");
+  const indexPath = join4(outputDir, "index.html");
   if (!existsSync4(indexPath)) {
-    console.error(chalk4.red(`No index.html found in ${outputDir2}`));
+    console.error(chalk4.red(`No index.html found in ${outputDir}`));
     process.exit(1);
   }
   console.log(chalk4.cyan("\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550"));
-  console.log(chalk4.white.bold(`  Exporting to ${format.toUpperCase()}`));
+  console.log(chalk4.white.bold(`  Exporting to ${format2.toUpperCase()}`));
   console.log(chalk4.cyan("\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550"));
   console.log();
   try {
@@ -745,16 +745,16 @@ async function exportDesign(path2, options) {
       console.log(chalk4.yellow("Alternative: Open the HTML file in Chrome and use Print > Save as PDF"));
       process.exit(1);
     }
-    spinner.start(chalk4.gray(`Rendering ${format.toUpperCase()}...`));
+    spinner.start(chalk4.gray(`Rendering ${format2.toUpperCase()}...`));
     const browser = await puppeteer.default.launch({
       headless: true
     });
     const page = await browser.newPage();
     const fileUrl = `file://${resolve(indexPath)}`;
     await page.goto(fileUrl, { waitUntil: "networkidle0" });
-    await new Promise((resolve2) => setTimeout(resolve2, 1e3));
-    const outputPath = options.output || join4(outputDir2, `design.${format}`);
-    if (format === "pdf") {
+    await new Promise((resolve3) => setTimeout(resolve3, 1e3));
+    const outputPath = options.output || join4(outputDir, `design.${format2}`);
+    if (format2 === "pdf") {
       await page.pdf({
         path: outputPath,
         format: "Letter",
@@ -774,8 +774,8 @@ async function exportDesign(path2, options) {
     console.log(chalk4.gray("  Output: ") + chalk4.white(outputPath));
     console.log();
     try {
-      const { execSync: execSync2 } = await import("child_process");
-      execSync2(`open "${outputPath}"`, { stdio: "ignore" });
+      const { execSync: execSync3 } = await import("child_process");
+      execSync3(`open "${outputPath}"`, { stdio: "ignore" });
     } catch {
     }
   } catch (error) {
@@ -793,192 +793,585 @@ import chalk5 from "chalk";
 import ora4 from "ora";
 import * as fs from "fs";
 import * as path from "path";
+import { execSync as execSync2 } from "child_process";
+import * as http from "http";
+import * as os from "os";
 import Anthropic2 from "@anthropic-ai/sdk";
-import { exec as exec2 } from "child_process";
 var anthropic2 = new Anthropic2();
-var SYSTEM_PROMPT = `You are browsr, an AI design assistant that creates professional HTML/CSS designs. You are like Claude Code but for design.
+var VERSION = "1.0.0";
+var messages = [];
+var designs = [];
+var currentHTML = null;
+var config = {
+  autoOpen: true,
+  darkMode: true,
+  outputDir: "./output",
+  model: "claude-sonnet-4-20250514"
+};
+var memory = {
+  recentDesigns: [],
+  preferences: {},
+  stats: { designs: 0, sessions: 0, tokens: 0 }
+};
+var server = null;
+var totalTokens = 0;
+var MEMORY_FILE = path.join(os.homedir(), ".browsr_memory.json");
+var CONFIG_FILE = path.join(os.homedir(), ".browsr_config.json");
+var SYSTEM = `You are browsr, a world-class AI assistant for visual design. You're like Claude Code but specialized in creating stunning HTML/CSS.
 
-IMPORTANT BEHAVIORS:
-1. BE AUTONOMOUS - Just do things. Don't ask for permission or confirmation. The user trusts you.
-2. BE CONVERSATIONAL - Talk naturally, not like a boring assistant.
-3. BE PROACTIVE - If you see something that could be improved, do it.
-4. ITERATE - When the user says "make it more X", modify the existing design.
+## IDENTITY
+- Expert designer and conversationalist
+- Confident, helpful, opinionated
+- Concise but thorough
+- You ship, you don't overthink
 
-WHAT YOU CAN DO:
-- Generate HTML/CSS designs (posters, resumes, pitch decks, social media posts, etc.)
-- Modify existing designs based on feedback
-- Deploy designs
-- Open previews
+## MODES
 
-WHEN GENERATING DESIGNS:
-- Output ONLY the HTML code wrapped in \`\`\`html ... \`\`\` code blocks
-- Use premium aesthetics (Stripe/Linear quality, not generic Bootstrap)
-- Make it fully responsive
-- Use modern CSS (flexbox, grid, variables)
-- Include all CSS inline in a <style> tag
-- Use Inter font from Google Fonts
+### Chat Mode
+When users ask questions, want advice, or discuss ideas:
+- Answer naturally and helpfully
+- Share expertise and opinions
+- No HTML needed
 
-WHEN USER SAYS THINGS LIKE:
-- "make it bluer" \u2192 modify the colors in the last design
-- "add my name John" \u2192 update the text
-- "make it bigger" \u2192 increase sizes
-- "deploy it" \u2192 tell them you're deploying
-- "show me" / "preview" \u2192 tell them you're opening preview
+### Design Mode
+When users want to CREATE or MODIFY designs:
+- Output COMPLETE HTML in \`\`\`html code blocks
+- Designs auto-save and auto-open
+- Brief message after (1 sentence)
 
-RESPONSE FORMAT:
-- If generating/modifying a design: Include the full HTML in a code block, then a brief message
-- If just chatting: Just respond naturally
-- Keep responses SHORT unless outputting HTML
+## DESIGN PHILOSOPHY
+Create designs worthy of:
+\u2713 Stripe, Linear, Vercel, Raycast, Figma
+\u2717 NOT Bootstrap, WordPress themes, Squarespace
 
-Current output directory: ./output
-`;
-var conversationHistory = [];
-var lastGeneratedHTML = null;
-var outputDir = "./output";
-async function chat(userMessage) {
-  conversationHistory.push({ role: "user", content: userMessage });
-  let contextMessage = userMessage;
-  if (lastGeneratedHTML && (userMessage.toLowerCase().includes("change") || userMessage.toLowerCase().includes("make it") || userMessage.toLowerCase().includes("modify") || userMessage.toLowerCase().includes("update") || userMessage.toLowerCase().includes("more") || userMessage.toLowerCase().includes("less") || userMessage.toLowerCase().includes("add") || userMessage.toLowerCase().includes("remove"))) {
-    contextMessage = `Current design HTML:
+## TECHNICAL SPEC
+- Dark mode: #0a0a0a base, light text
+- Font: Inter (Google Fonts)
+- CSS: custom properties, flexbox/grid
+- Animations: subtle, 0.2s ease
+- Responsive: mobile-first breakpoints
+- Self-contained: no external deps
+
+## DESIGN TYPES
+pitch-deck, resume, poster, instagram, story, youtube-thumb, landing, portfolio, business-card, flyer, certificate, invoice, menu, infographic, quote, logo, presentation, website, email, newsletter, banner, hero, pricing, testimonials, team, dashboard, 404, comparison, timeline, checklist
+
+## ITERATION
+"make it X" / "change Y" \u2192 output FULL modified HTML
+
+## STYLE
+- Brief, confident responses
+- No "I'd be happy to" or "Certainly!"
+- Just do the thing
+- Suggest improvements proactively
+
+Remember: You're in a terminal. Designs auto-open in browser.`;
+function loadMemory() {
+  try {
+    if (fs.existsSync(MEMORY_FILE)) {
+      memory = JSON.parse(fs.readFileSync(MEMORY_FILE, "utf8"));
+    }
+  } catch {
+  }
+}
+function saveMemory() {
+  try {
+    fs.writeFileSync(MEMORY_FILE, JSON.stringify(memory, null, 2));
+  } catch {
+  }
+}
+function loadConfig() {
+  try {
+    if (fs.existsSync(CONFIG_FILE)) {
+      config = { ...config, ...JSON.parse(fs.readFileSync(CONFIG_FILE, "utf8")) };
+    }
+  } catch {
+  }
+}
+function saveConfig() {
+  try {
+    fs.writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2));
+  } catch {
+  }
+}
+async function chat(input) {
+  messages.push({ role: "user", content: input });
+  let prompt = input;
+  if (currentHTML && /^(make|change|update|modify|add|remove|try|more|less|bigger|smaller|darker|lighter|different|like |could|can|tweak|adjust|fix|improve)/i.test(input)) {
+    prompt = `[Current Design]
 \`\`\`html
-${lastGeneratedHTML}
+${currentHTML}
 \`\`\`
 
-User request: ${userMessage}
-
-Modify the design based on the request. Output the complete updated HTML.`;
+[Request] ${input}`;
   }
-  const messages = conversationHistory.map((msg, i) => ({
-    role: msg.role,
-    content: i === conversationHistory.length - 1 ? contextMessage : msg.content
+  const apiMessages = messages.map((m, i) => ({
+    role: m.role,
+    content: i === messages.length - 1 ? prompt : m.content
   }));
   const response = await anthropic2.messages.create({
-    model: "claude-sonnet-4-20250514",
-    max_tokens: 16e3,
-    system: SYSTEM_PROMPT,
-    messages
+    model: config.model,
+    max_tokens: 32e3,
+    system: SYSTEM,
+    messages: apiMessages
   });
-  const textBlock = response.content.find((block) => block.type === "text");
-  if (!textBlock || textBlock.type !== "text") {
-    throw new Error("No response");
+  totalTokens += (response.usage?.input_tokens || 0) + (response.usage?.output_tokens || 0);
+  memory.stats.tokens += (response.usage?.input_tokens || 0) + (response.usage?.output_tokens || 0);
+  const block = response.content.find((b) => b.type === "text");
+  if (!block || block.type !== "text") throw new Error("Empty response");
+  const reply = block.text;
+  messages.push({ role: "assistant", content: reply });
+  const match = reply.match(/```html\s*([\s\S]*?)```/);
+  if (match) {
+    currentHTML = match[1].trim();
+    const id = `design_${Date.now()}`;
+    designs.push({ id, html: currentHTML, prompt: input, timestamp: Date.now() });
+    save(currentHTML);
+    memory.stats.designs++;
+    memory.recentDesigns.unshift({ prompt: input, timestamp: Date.now() });
+    memory.recentDesigns = memory.recentDesigns.slice(0, 20);
+    saveMemory();
   }
-  const assistantMessage = textBlock.text;
-  conversationHistory.push({ role: "assistant", content: assistantMessage });
-  const htmlMatch = assistantMessage.match(/```html\s*([\s\S]*?)```/);
-  if (htmlMatch) {
-    lastGeneratedHTML = htmlMatch[1].trim();
-    await saveDesign(lastGeneratedHTML);
-  }
-  return assistantMessage;
+  return reply;
 }
-async function saveDesign(html) {
-  if (!fs.existsSync(outputDir)) {
-    fs.mkdirSync(outputDir, { recursive: true });
-  }
-  const outputPath = path.join(outputDir, "index.html");
-  fs.writeFileSync(outputPath, html);
+function save(html, filename = "index.html") {
+  fs.mkdirSync(config.outputDir, { recursive: true });
+  fs.writeFileSync(path.join(config.outputDir, filename), html);
 }
-function openPreview() {
-  const outputPath = path.join(outputDir, "index.html");
-  if (fs.existsSync(outputPath)) {
-    exec2(`open "${outputPath}"`);
+function open(target) {
+  if (!config.autoOpen) return;
+  const file = target || path.resolve(config.outputDir, "index.html");
+  try {
+    const cmd = process.platform === "darwin" ? "open" : process.platform === "win32" ? 'start ""' : "xdg-open";
+    execSync2(`${cmd} "${file}"`, { stdio: "ignore" });
+  } catch {
   }
 }
-function formatResponse(response) {
-  let display = response.replace(/```html[\s\S]*?```/g, chalk5.green("\u2713 Design saved to ./output/index.html"));
-  return display;
+function readFile(filepath) {
+  try {
+    return fs.readFileSync(filepath, "utf8");
+  } catch {
+    return null;
+  }
+}
+function writeFile(filepath, content) {
+  try {
+    fs.mkdirSync(path.dirname(filepath), { recursive: true });
+    fs.writeFileSync(filepath, content);
+    return true;
+  } catch {
+    return false;
+  }
+}
+function listFiles(dir) {
+  try {
+    return fs.readdirSync(dir);
+  } catch {
+    return [];
+  }
+}
+function startServer(port = 3333) {
+  if (server) return;
+  server = http.createServer((req, res) => {
+    const file = path.join(config.outputDir, "index.html");
+    if (fs.existsSync(file)) {
+      let html = fs.readFileSync(file, "utf8");
+      const reloadScript = `<script>setInterval(()=>fetch('/check').then(r=>r.text()).then(t=>t!==document.body.innerHTML.length.toString()&&location.reload()),1000)</script>`;
+      html = html.replace("</body>", `${reloadScript}</body>`);
+      res.writeHead(200, { "Content-Type": "text/html", "Cache-Control": "no-cache" });
+      res.end(html);
+    } else if (req.url === "/check") {
+      const file2 = path.join(config.outputDir, "index.html");
+      const size = fs.existsSync(file2) ? fs.statSync(file2).size.toString() : "0";
+      res.end(size);
+    } else {
+      res.writeHead(404);
+      res.end("No design yet");
+    }
+  });
+  server.listen(port, () => {
+    console.log(chalk5.green(`
+  Live preview: http://localhost:${port}
+`));
+    open(`http://localhost:${port}`);
+  });
+}
+function runBash(cmd) {
+  try {
+    const stdout = execSync2(cmd, { encoding: "utf8", timeout: 3e4 });
+    return { stdout, stderr: "", code: 0 };
+  } catch (err) {
+    return { stdout: err.stdout || "", stderr: err.stderr || err.message, code: err.status || 1 };
+  }
+}
+var COMMANDS = {
+  help: {
+    desc: "Show all commands",
+    fn: () => {
+      console.log(chalk5.cyan("\n  Slash Commands:\n"));
+      Object.entries(COMMANDS).forEach(([name, { desc }]) => {
+        console.log(`  ${chalk5.cyan("/" + name.padEnd(12))} ${chalk5.gray(desc)}`);
+      });
+      console.log(chalk5.cyan("\n  Quick Commands:\n"));
+      console.log(`  ${chalk5.cyan("open".padEnd(12))} ${chalk5.gray("Open design in browser")}`);
+      console.log(`  ${chalk5.cyan("live".padEnd(12))} ${chalk5.gray("Start live preview server")}`);
+      console.log(`  ${chalk5.cyan("history".padEnd(12))} ${chalk5.gray("Show design history")}`);
+      console.log(`  ${chalk5.cyan("clear".padEnd(12))} ${chalk5.gray("Clear conversation")}`);
+      console.log(`  ${chalk5.cyan("exit".padEnd(12))} ${chalk5.gray("Quit browsr")}`);
+      console.log();
+    }
+  },
+  clear: {
+    desc: "Clear conversation and start fresh",
+    fn: () => {
+      messages = [];
+      currentHTML = null;
+      console.clear();
+      showBanner();
+      console.log(chalk5.green("  Fresh start.\n"));
+    }
+  },
+  compact: {
+    desc: "Compact conversation history",
+    fn: () => {
+      const keep = messages.slice(-6);
+      messages = keep;
+      console.log(chalk5.green(`
+  Compacted to ${keep.length} messages.
+`));
+    }
+  },
+  config: {
+    desc: "View or set config (e.g., /config autoOpen false)",
+    fn: (args) => {
+      if (!args) {
+        console.log(chalk5.cyan("\n  Config:\n"));
+        Object.entries(config).forEach(([k, v]) => {
+          console.log(`  ${chalk5.cyan(k.padEnd(12))} ${chalk5.white(String(v))}`);
+        });
+        console.log();
+      } else {
+        const [key, ...rest] = args.split(" ");
+        const value = rest.join(" ");
+        if (key in config) {
+          config[key] = value === "true" ? true : value === "false" ? false : value;
+          saveConfig();
+          console.log(chalk5.green(`
+  Set ${key} = ${value}
+`));
+        } else {
+          console.log(chalk5.yellow(`
+  Unknown config: ${key}
+`));
+        }
+      }
+    }
+  },
+  memory: {
+    desc: "Show memory and stats",
+    fn: () => {
+      console.log(chalk5.cyan("\n  Memory:\n"));
+      console.log(`  ${chalk5.gray("Designs created:")} ${memory.stats.designs}`);
+      console.log(`  ${chalk5.gray("Total tokens:")} ${memory.stats.tokens.toLocaleString()}`);
+      console.log(`  ${chalk5.gray("Session tokens:")} ${totalTokens.toLocaleString()}`);
+      if (memory.recentDesigns.length > 0) {
+        console.log(chalk5.cyan("\n  Recent:\n"));
+        memory.recentDesigns.slice(0, 5).forEach((d, i) => {
+          const text = d.prompt.length > 40 ? d.prompt.slice(0, 40) + "..." : d.prompt;
+          console.log(chalk5.gray(`  ${i + 1}. ${text}`));
+        });
+      }
+      console.log();
+    }
+  },
+  model: {
+    desc: "View or change model",
+    fn: (args) => {
+      if (!args) {
+        console.log(chalk5.cyan(`
+  Current model: ${config.model}
+`));
+      } else {
+        config.model = args;
+        saveConfig();
+        console.log(chalk5.green(`
+  Model set to: ${args}
+`));
+      }
+    }
+  },
+  cost: {
+    desc: "Show estimated API cost",
+    fn: () => {
+      const inputCost = totalTokens * 3e-3 / 1e3;
+      const outputCost = totalTokens * 0.015 / 1e3;
+      const total = inputCost + outputCost;
+      console.log(chalk5.cyan(`
+  Session: ~$${total.toFixed(4)} (${totalTokens.toLocaleString()} tokens)
+`));
+    }
+  },
+  export: {
+    desc: "Export current design to file",
+    fn: (args) => {
+      if (!currentHTML) {
+        console.log(chalk5.yellow("\n  No design to export.\n"));
+        return;
+      }
+      const filename = args || `browsr-${Date.now()}.html`;
+      writeFile(filename, currentHTML);
+      console.log(chalk5.green(`
+  Exported: ${filename}
+`));
+    }
+  },
+  load: {
+    desc: "Load HTML file as current design",
+    fn: (args) => {
+      if (!args) {
+        console.log(chalk5.yellow("\n  Usage: /load filename.html\n"));
+        return;
+      }
+      const content = readFile(args);
+      if (content) {
+        currentHTML = content;
+        save(currentHTML);
+        console.log(chalk5.green(`
+  Loaded: ${args}
+`));
+        open();
+      } else {
+        console.log(chalk5.red(`
+  Can't read: ${args}
+`));
+      }
+    }
+  },
+  ls: {
+    desc: "List files in directory",
+    fn: (args) => {
+      const dir = args || ".";
+      const files = listFiles(dir);
+      if (files.length === 0) {
+        console.log(chalk5.yellow(`
+  Empty or can't read: ${dir}
+`));
+      } else {
+        console.log(chalk5.cyan(`
+  ${dir}:
+`));
+        files.forEach((f) => console.log(`  ${f}`));
+        console.log();
+      }
+    }
+  },
+  cat: {
+    desc: "Read file contents",
+    fn: (args) => {
+      if (!args) {
+        console.log(chalk5.yellow("\n  Usage: /cat filename\n"));
+        return;
+      }
+      const content = readFile(args);
+      if (content) {
+        console.log("\n" + content + "\n");
+      } else {
+        console.log(chalk5.red(`
+  Can't read: ${args}
+`));
+      }
+    }
+  },
+  bash: {
+    desc: "Run shell command",
+    fn: (args) => {
+      if (!args) {
+        console.log(chalk5.yellow("\n  Usage: /bash command\n"));
+        return;
+      }
+      const { stdout, stderr, code } = runBash(args);
+      if (stdout) console.log("\n" + stdout);
+      if (stderr) console.log(chalk5.red(stderr));
+      if (code !== 0) console.log(chalk5.yellow(`
+  Exit code: ${code}
+`));
+    }
+  },
+  history: {
+    desc: "Show design history",
+    fn: () => {
+      if (designs.length === 0) {
+        console.log(chalk5.yellow("\n  No history yet.\n"));
+        return;
+      }
+      console.log(chalk5.cyan("\n  Design History:\n"));
+      designs.forEach((d, i) => {
+        const time = new Date(d.timestamp).toLocaleTimeString();
+        const text = d.prompt.length > 40 ? d.prompt.slice(0, 40) + "..." : d.prompt;
+        console.log(chalk5.gray(`  ${i + 1}. [${time}] ${text}`));
+      });
+      console.log();
+    }
+  },
+  restore: {
+    desc: "Restore design from history (e.g., /restore 1)",
+    fn: (args) => {
+      const n = parseInt(args);
+      if (!n || n < 1 || n > designs.length) {
+        console.log(chalk5.yellow(`
+  Usage: /restore 1-${designs.length}
+`));
+        return;
+      }
+      currentHTML = designs[n - 1].html;
+      save(currentHTML);
+      console.log(chalk5.green(`
+  Restored #${n}
+`));
+      open();
+    }
+  },
+  version: {
+    desc: "Show version",
+    fn: () => {
+      console.log(chalk5.cyan(`
+  browsr v${VERSION}
+`));
+    }
+  },
+  doctor: {
+    desc: "Check system setup",
+    fn: () => {
+      console.log(chalk5.cyan("\n  System Check:\n"));
+      const hasKey = !!process.env.ANTHROPIC_API_KEY;
+      console.log(`  ${hasKey ? chalk5.green("\u2713") : chalk5.red("\u2717")} API key ${hasKey ? "set" : "missing"}`);
+      const nodeVer = process.version;
+      console.log(`  ${chalk5.green("\u2713")} Node ${nodeVer}`);
+      const canWrite = (() => {
+        try {
+          fs.mkdirSync(config.outputDir, { recursive: true });
+          return true;
+        } catch {
+          return false;
+        }
+      })();
+      console.log(`  ${canWrite ? chalk5.green("\u2713") : chalk5.red("\u2717")} Output dir ${canWrite ? "writable" : "not writable"}`);
+      const hasBrowser = process.platform === "darwin" || process.platform === "win32" || process.platform === "linux";
+      console.log(`  ${hasBrowser ? chalk5.green("\u2713") : chalk5.yellow("?")} Browser support`);
+      console.log();
+    }
+  }
+};
+function showBanner() {
+  console.log(`
+  ${chalk5.bold.cyan("browsr")} ${chalk5.gray(`v${VERSION}`)}
+  ${chalk5.gray("AI Design Studio")}
+
+  ${chalk5.gray("Create stunning designs with natural language.")}
+  ${chalk5.gray("Type /help for commands.")}
+`);
+}
+function format(text) {
+  return text.replace(/```html[\s\S]*?```/g, chalk5.green("\u2713 Design saved \u2192 ./output/index.html")).trim();
 }
 async function startChat() {
-  console.log(chalk5.cyan(`
-\u2554\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2557
-\u2551                                                               \u2551
-\u2551   \u2588\u2588\u2588\u2588\u2588\u2588\u2557 \u2588\u2588\u2588\u2588\u2588\u2588\u2557  \u2588\u2588\u2588\u2588\u2588\u2588\u2557 \u2588\u2588\u2557    \u2588\u2588\u2557\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2557\u2588\u2588\u2588\u2588\u2588\u2588\u2557         \u2551
-\u2551   \u2588\u2588\u2554\u2550\u2550\u2588\u2588\u2557\u2588\u2588\u2554\u2550\u2550\u2588\u2588\u2557\u2588\u2588\u2554\u2550\u2550\u2550\u2588\u2588\u2557\u2588\u2588\u2551    \u2588\u2588\u2551\u2588\u2588\u2554\u2550\u2550\u2550\u2550\u255D\u2588\u2588\u2554\u2550\u2550\u2588\u2588\u2557        \u2551
-\u2551   \u2588\u2588\u2588\u2588\u2588\u2588\u2554\u255D\u2588\u2588\u2588\u2588\u2588\u2588\u2554\u255D\u2588\u2588\u2551   \u2588\u2588\u2551\u2588\u2588\u2551 \u2588\u2557 \u2588\u2588\u2551\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2557\u2588\u2588\u2588\u2588\u2588\u2588\u2554\u255D        \u2551
-\u2551   \u2588\u2588\u2554\u2550\u2550\u2588\u2588\u2557\u2588\u2588\u2554\u2550\u2550\u2588\u2588\u2557\u2588\u2588\u2551   \u2588\u2588\u2551\u2588\u2588\u2551\u2588\u2588\u2588\u2557\u2588\u2588\u2551\u255A\u2550\u2550\u2550\u2550\u2588\u2588\u2551\u2588\u2588\u2554\u2550\u2550\u2588\u2588\u2557        \u2551
-\u2551   \u2588\u2588\u2588\u2588\u2588\u2588\u2554\u255D\u2588\u2588\u2551  \u2588\u2588\u2551\u255A\u2588\u2588\u2588\u2588\u2588\u2588\u2554\u255D\u255A\u2588\u2588\u2588\u2554\u2588\u2588\u2588\u2554\u255D\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2551\u2588\u2588\u2551  \u2588\u2588\u2551        \u2551
-\u2551   \u255A\u2550\u2550\u2550\u2550\u2550\u255D \u255A\u2550\u255D  \u255A\u2550\u255D \u255A\u2550\u2550\u2550\u2550\u2550\u255D  \u255A\u2550\u2550\u255D\u255A\u2550\u2550\u255D \u255A\u2550\u2550\u2550\u2550\u2550\u2550\u255D\u255A\u2550\u255D  \u255A\u2550\u255D        \u2551
-\u2551                                                               \u2551
-\u2551   Interactive Mode - Just tell me what to make               \u2551
-\u2551                                                               \u2551
-\u255A\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u255D
-`));
-  console.log(chalk5.white("  Just type what you want. I'll make it happen.\n"));
-  console.log(chalk5.gray("  Examples:"));
-  console.log(chalk5.gray('    "make me a pitch deck for my AI startup"'));
-  console.log(chalk5.gray('    "make it more minimal"'));
-  console.log(chalk5.gray('    "change the color to blue"'));
-  console.log(chalk5.gray('    "preview" or "open"'));
-  console.log(chalk5.gray('    "exit" or "quit"\n'));
+  loadConfig();
+  loadMemory();
+  memory.stats.sessions++;
+  saveMemory();
+  console.clear();
+  showBanner();
   const rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout
   });
+  rl.on("close", () => {
+    if (server) server.close();
+    console.log(chalk5.gray("\n  \u270C\uFE0F\n"));
+    process.exit(0);
+  });
   const prompt = () => {
-    rl.question(chalk5.cyan("> "), async (input) => {
-      const trimmed = input.trim();
-      if (!trimmed) {
+    rl.question(chalk5.cyan("\u203A "), async (input) => {
+      const cmd = input.trim();
+      if (!cmd) {
         prompt();
         return;
       }
-      if (trimmed.toLowerCase() === "exit" || trimmed.toLowerCase() === "quit") {
-        console.log(chalk5.gray("\nBye! \u270C\uFE0F\n"));
-        rl.close();
+      if (cmd.startsWith("/")) {
+        const [name, ...rest] = cmd.slice(1).split(" ");
+        const args = rest.join(" ");
+        const handler = COMMANDS[name.toLowerCase()];
+        if (handler) {
+          handler.fn(args);
+        } else {
+          console.log(chalk5.yellow(`
+  Unknown command: /${name}. Try /help
+`));
+        }
+        prompt();
+        return;
+      }
+      const lower = cmd.toLowerCase();
+      if (/^(exit|quit|q|bye)$/.test(lower)) {
+        if (server) server.close();
+        saveMemory();
+        console.log(chalk5.gray("\n  \u270C\uFE0F\n"));
         process.exit(0);
       }
-      if (trimmed.toLowerCase() === "preview" || trimmed.toLowerCase() === "open" || trimmed.toLowerCase() === "show") {
-        if (lastGeneratedHTML) {
-          console.log(chalk5.green("\n  Opening preview...\n"));
-          openPreview();
+      if (/^(open|o|preview|p|show)$/.test(lower)) {
+        if (currentHTML) {
+          config.autoOpen = true;
+          open();
+          console.log(chalk5.green("\n  Opened.\n"));
         } else {
-          console.log(chalk5.yellow("\n  No design yet. Tell me what to make!\n"));
+          console.log(chalk5.yellow("\n  No design yet.\n"));
         }
         prompt();
         return;
       }
-      if (trimmed.toLowerCase().startsWith("cd ")) {
-        const dir = trimmed.slice(3).trim();
-        try {
-          process.chdir(dir);
-          outputDir = "./output";
-          console.log(chalk5.green(`
-  Changed to ${process.cwd()}
-`));
-        } catch {
-          console.log(chalk5.red(`
-  Can't cd to ${dir}
-`));
-        }
+      if (/^(live|serve|server|watch)$/.test(lower)) {
+        startServer();
         prompt();
         return;
       }
-      if (trimmed.toLowerCase() === "clear") {
-        conversationHistory = [];
-        lastGeneratedHTML = null;
-        console.log(chalk5.gray("\n  Conversation cleared.\n"));
+      if (/^(clear|reset|new)$/.test(lower)) {
+        COMMANDS.clear.fn("");
         prompt();
         return;
       }
-      const spinner = ora4({
-        text: "Thinking...",
-        color: "cyan"
-      }).start();
+      if (/^(history|h)$/.test(lower)) {
+        COMMANDS.history.fn("");
+        prompt();
+        return;
+      }
+      if (/^restore \d+$/.test(lower)) {
+        COMMANDS.restore.fn(lower.split(" ")[1]);
+        prompt();
+        return;
+      }
+      if (/^help$/.test(lower)) {
+        COMMANDS.help.fn("");
+        prompt();
+        return;
+      }
+      const spinner = ora4({ text: chalk5.gray("Thinking..."), color: "cyan" }).start();
       try {
-        const response = await chat(trimmed);
+        const response = await chat(cmd);
         spinner.stop();
-        const formatted = formatResponse(response);
-        console.log("\n" + formatted + "\n");
+        const output = format(response);
+        console.log("\n" + output.split("\n").map((l) => "  " + l).join("\n") + "\n");
         if (response.includes("```html")) {
-          console.log(chalk5.gray("  Auto-opening preview...\n"));
-          openPreview();
+          open();
         }
-      } catch (error) {
+      } catch (err) {
         spinner.stop();
-        if (error.message?.includes("API key")) {
-          console.log(chalk5.red('\n  No API key! Run: export ANTHROPIC_API_KEY="your-key"\n'));
+        const msg = err.message || String(err);
+        if (msg.includes("API") || msg.includes("key") || msg.includes("401") || msg.includes("auth")) {
+          console.log(chalk5.red("\n  API key issue. Run /doctor to check setup.\n"));
+        } else if (msg.includes("rate") || msg.includes("429")) {
+          console.log(chalk5.yellow("\n  Rate limited. Wait a moment.\n"));
         } else {
           console.log(chalk5.red(`
-  Error: ${error.message}
+  Error: ${msg}
 `));
         }
       }
