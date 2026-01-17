@@ -47,69 +47,20 @@
             text-align: center;
         }
 
-        .download-btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 12px;
-            background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
-            color: white;
-            font-size: 20px;
-            font-weight: 600;
-            padding: 20px 48px;
+        .install-box {
+            background: #0f172a;
             border-radius: 16px;
-            text-decoration: none;
-            box-shadow: 0 4px 24px rgba(14, 165, 233, 0.4);
-            transition: all 0.2s;
+            padding: 24px 32px;
             margin-bottom: 16px;
-        }
-
-        .download-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 32px rgba(14, 165, 233, 0.5);
-        }
-
-        .download-btn svg {
-            width: 24px;
-            height: 24px;
-        }
-
-        .download-note {
-            font-size: 14px;
-            color: #94a3b8;
-            margin-bottom: 48px;
-        }
-
-        .divider {
             display: flex;
             align-items: center;
             gap: 16px;
-            color: #cbd5e1;
-            margin-bottom: 24px;
-            width: 100%;
-            max-width: 500px;
-        }
-
-        .divider::before,
-        .divider::after {
-            content: '';
-            flex: 1;
-            height: 1px;
-            background: #e2e8f0;
-        }
-
-        .install-box {
-            background: #0f172a;
-            border-radius: 12px;
-            padding: 20px 28px;
-            margin-bottom: 24px;
-            position: relative;
-            max-width: 100%;
-            overflow-x: auto;
+            box-shadow: 0 4px 24px rgba(15, 23, 42, 0.2);
         }
 
         .install-command {
             font-family: 'SF Mono', 'Monaco', 'Inconsolata', monospace;
-            font-size: 14px;
+            font-size: 15px;
             color: #e2e8f0;
             white-space: nowrap;
         }
@@ -131,28 +82,31 @@
         }
 
         .copy-btn {
-            position: absolute;
-            right: 12px;
-            top: 50%;
-            transform: translateY(-50%);
-            background: #1e293b;
+            background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
             border: none;
-            color: #94a3b8;
-            padding: 6px 12px;
-            border-radius: 6px;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
             cursor: pointer;
-            font-size: 13px;
+            font-size: 15px;
+            font-weight: 600;
             transition: all 0.2s;
+            white-space: nowrap;
         }
 
         .copy-btn:hover {
-            background: #334155;
-            color: #e2e8f0;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(14, 165, 233, 0.4);
         }
 
         .copy-btn.copied {
-            background: #065f46;
-            color: #6ee7b7;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        }
+
+        .instructions {
+            font-size: 14px;
+            color: #94a3b8;
+            margin-bottom: 32px;
         }
 
         .github-link {
@@ -202,20 +156,14 @@
             .logo {
                 font-size: 8px;
             }
-            .download-btn {
-                font-size: 18px;
-                padding: 16px 32px;
-            }
             .install-box {
-                padding: 14px;
+                flex-direction: column;
+                padding: 20px;
             }
             .install-command {
                 font-size: 11px;
             }
             .copy-btn {
-                position: static;
-                transform: none;
-                margin-top: 12px;
                 width: 100%;
             }
         }
@@ -234,16 +182,6 @@
     <h1>browsr</h1>
     <p class="tagline">AI design generation in your terminal. Like Canva, but code.</p>
 
-    <a href="https://github.com/i-luv-pho/browsr/releases/download/v2.0.0/install-browsr.command" download class="download-btn">
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-        </svg>
-        Download for Mac
-    </a>
-    <p class="download-note">Double-click to install. Sets up everything automatically.</p>
-
-    <div class="divider">or use terminal</div>
-
     <div class="install-box">
         <code class="install-command">
             <span class="curl">curl</span> <span class="url">-fsSL https://raw.githubusercontent.com/i-luv-pho/browsr/main/install.sh</span> <span class="pipe">|</span> <span class="bash">bash</span>
@@ -251,13 +189,15 @@
         <button class="copy-btn" onclick="copyCommand()">Copy</button>
     </div>
 
+    <p class="instructions">Paste in Terminal. Installs everything automatically.</p>
+
     <a href="https://github.com/i-luv-pho/browsr" class="github-link">View on GitHub</a>
 
     <div class="features">
         <div class="feature">
             <div class="feature-icon">&#9889;</div>
             <div class="feature-title">Instant</div>
-            <div class="feature-desc">One click installs everything</div>
+            <div class="feature-desc">One command installs everything</div>
         </div>
         <div class="feature">
             <div class="feature-icon">&#128187;</div>
