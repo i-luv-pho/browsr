@@ -4,7 +4,7 @@
   "description": "Terminal AI builder - Canva competitor that outputs real HTML/CSS/JS",
   "type": "module",
   "bin": {
-    "browsr": "./dist/browsr.mjs"
+    "browsr": "dist/browsr.mjs"
   },
   "scripts": {
     "dev": "tsx src/cli/index.ts",
