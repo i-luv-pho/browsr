@@ -8,7 +8,7 @@ browsr is a terminal-based tool that generates professional-quality designs from
 
 ```bash
 # Clone the repo
-git clone https://github.com/YOUR_USERNAME/browsr.git
+git clone https://github.com/i-luv-pho/browsr.git
 cd browsr
 
 # Install dependencies
