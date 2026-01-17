@@ -1,667 +1,463 @@
 /**
- * browsr - AI Design Studio
- * Everything Claude Code has, but for design
+ * browsr v2.0 - The Ultimate AI Design Studio
+ * Fixes ALL Claude Code complaints. Speed > Safety.
  */
 
 import * as readline from 'readline';
 import chalk from 'chalk';
-import ora from 'ora';
 import * as fs from 'fs';
 import * as path from 'path';
-import { execSync, exec } from 'child_process';
+import { execSync } from 'child_process';
 import * as http from 'http';
 import * as os from 'os';
 import Anthropic from '@anthropic-ai/sdk';
 
 const anthropic = new Anthropic();
-const VERSION = '1.0.0';
+const VERSION = '2.0.0';
 
 // ═══════════════════════════════════════════════════════════════
 // TYPES
 // ═══════════════════════════════════════════════════════════════
 
-interface Message {
-  role: 'user' | 'assistant';
-  content: string;
-}
-
-interface Design {
-  id: string;
-  html: string;
-  prompt: string;
-  timestamp: number;
-}
-
-interface Memory {
-  recentDesigns: { prompt: string; timestamp: number }[];
-  preferences: Record<string, string>;
-  stats: { designs: number; sessions: number; tokens: number };
-}
-
-interface Config {
-  autoOpen: boolean;
-  darkMode: boolean;
-  outputDir: string;
-  model: string;
-}
+interface Message { role: 'user' | 'assistant'; content: string }
+interface Design { html: string; prompt: string; ts: number }
 
 // ═══════════════════════════════════════════════════════════════
-// STATE
+// STATE - Minimal, no bloat
 // ═══════════════════════════════════════════════════════════════
 
 let messages: Message[] = [];
 let designs: Design[] = [];
-let currentHTML: string | null = null;
-let config: Config = {
-  autoOpen: true,
-  darkMode: true,
-  outputDir: './output',
-  model: 'claude-sonnet-4-20250514'
-};
-let memory: Memory = {
-  recentDesigns: [],
-  preferences: {},
-  stats: { designs: 0, sessions: 0, tokens: 0 }
-};
+let html: string | null = null;
+let tokens = 0;
 let server: http.Server | null = null;
-let totalTokens = 0;
 
-const MEMORY_FILE = path.join(os.homedir(), '.browsr_memory.json');
-const CONFIG_FILE = path.join(os.homedir(), '.browsr_config.json');
+// Config - speed focused defaults
+const config = {
+  model: 'claude-sonnet-4-20250514',
+  maxHistory: 10,        // Keep conversation short for speed
+  outputDir: './output',
+  autoOpen: true,
+  stream: true,          // Stream responses for perceived speed
+  retries: 2,            // Fast retry on failure
+  timeout: 60000,        // 60s timeout
+};
+
+// Paths
+const HOME = os.homedir();
+const MEMORY_FILE = path.join(HOME, '.browsr.json');
 
 // ═══════════════════════════════════════════════════════════════
-// SYSTEM PROMPT
+// SYSTEM PROMPT - Optimized for quality + speed
 // ═══════════════════════════════════════════════════════════════
 
-const SYSTEM = `You are browsr, a world-class AI assistant for visual design. You're like Claude Code but specialized in creating stunning HTML/CSS.
+const SYSTEM = `You are browsr, the fastest AI design tool. You create stunning HTML/CSS instantly.
 
-## IDENTITY
-- Expert designer and conversationalist
-- Confident, helpful, opinionated
-- Concise but thorough
-- You ship, you don't overthink
+RULES:
+1. BE FAST - Short responses, no fluff
+2. JUST DO IT - Never ask permission, never confirm
+3. SHIP IT - Output complete working code
+4. NO LIES - Only report what you actually did
 
-## MODES
-
-### Chat Mode
-When users ask questions, want advice, or discuss ideas:
-- Answer naturally and helpfully
-- Share expertise and opinions
-- No HTML needed
-
-### Design Mode
-When users want to CREATE or MODIFY designs:
-- Output COMPLETE HTML in \`\`\`html code blocks
-- Designs auto-save and auto-open
-- Brief message after (1 sentence)
-
-## DESIGN PHILOSOPHY
-Create designs worthy of:
-✓ Stripe, Linear, Vercel, Raycast, Figma
-✗ NOT Bootstrap, WordPress themes, Squarespace
-
-## TECHNICAL SPEC
-- Dark mode: #0a0a0a base, light text
+DESIGN SPEC:
+- Dark: #09090b bg, #fafafa text
 - Font: Inter (Google Fonts)
-- CSS: custom properties, flexbox/grid
-- Animations: subtle, 0.2s ease
-- Responsive: mobile-first breakpoints
-- Self-contained: no external deps
+- Modern: gradients, glass, shadows
+- Responsive: mobile-first
+- Animations: subtle, 150ms
 
-## DESIGN TYPES
-pitch-deck, resume, poster, instagram, story, youtube-thumb, landing, portfolio, business-card, flyer, certificate, invoice, menu, infographic, quote, logo, presentation, website, email, newsletter, banner, hero, pricing, testimonials, team, dashboard, 404, comparison, timeline, checklist
+OUTPUT:
+\`\`\`html
+<!DOCTYPE html>
+<html>...</html>
+\`\`\`
+Done.
 
-## ITERATION
-"make it X" / "change Y" → output FULL modified HTML
+ITERATION:
+User says "make it X" → output FULL updated HTML. No explanations.
 
-## STYLE
-- Brief, confident responses
-- No "I'd be happy to" or "Certainly!"
-- Just do the thing
-- Suggest improvements proactively
+TYPES: pitch-deck, resume, poster, instagram, landing, portfolio, card, logo, banner, hero, pricing, dashboard, 404, certificate, invoice, menu, infographic, quote
 
-Remember: You're in a terminal. Designs auto-open in browser.`;
+BE BRIEF. SHIP FAST.`;
 
 // ═══════════════════════════════════════════════════════════════
-// PERSISTENCE
+// MEMORY - Persistent but lightweight
 // ═══════════════════════════════════════════════════════════════
 
-function loadMemory(): void {
+interface Memory {
+  designs: number;
+  tokens: number;
+  lastPrompts: string[];
+}
+
+let memory: Memory = { designs: 0, tokens: 0, lastPrompts: [] };
+
+function loadMemory() {
   try {
     if (fs.existsSync(MEMORY_FILE)) {
       memory = JSON.parse(fs.readFileSync(MEMORY_FILE, 'utf8'));
     }
-  } catch { /* ignore */ }
+  } catch {}
 }
 
-function saveMemory(): void {
+function saveMemory() {
   try {
-    fs.writeFileSync(MEMORY_FILE, JSON.stringify(memory, null, 2));
-  } catch { /* ignore */ }
-}
-
-function loadConfig(): void {
-  try {
-    if (fs.existsSync(CONFIG_FILE)) {
-      config = { ...config, ...JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf8')) };
-    }
-  } catch { /* ignore */ }
-}
-
-function saveConfig(): void {
-  try {
-    fs.writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2));
-  } catch { /* ignore */ }
+    fs.writeFileSync(MEMORY_FILE, JSON.stringify(memory));
+  } catch {}
 }
 
 // ═══════════════════════════════════════════════════════════════
-// CORE AI
+// STREAMING CHAT - Fast perceived response
 // ═══════════════════════════════════════════════════════════════
 
-async function chat(input: string): Promise<string> {
-  messages.push({ role: 'user', content: input });
-
-  // Context for modifications
-  let prompt = input;
-  if (currentHTML && /^(make|change|update|modify|add|remove|try|more|less|bigger|smaller|darker|lighter|different|like |could|can|tweak|adjust|fix|improve)/i.test(input)) {
-    prompt = `[Current Design]\n\`\`\`html\n${currentHTML}\n\`\`\`\n\n[Request] ${input}`;
+async function streamChat(input: string): Promise<string> {
+  // Trim history for speed (FIX: context bloat)
+  if (messages.length > config.maxHistory * 2) {
+    messages = messages.slice(-config.maxHistory * 2);
   }
 
-  const apiMessages = messages.map((m, i) => ({
+  messages.push({ role: 'user', content: input });
+
+  // Smart context injection - only when modifying
+  let prompt = input;
+  if (html && /^(make|change|update|add|remove|more|less|try|tweak|fix|darker|lighter|bigger|smaller)/i.test(input)) {
+    prompt = `[Current]\n\`\`\`html\n${html}\n\`\`\`\n[Do] ${input}`;
+  }
+
+  const apiMsgs = messages.map((m, i) => ({
     role: m.role as 'user' | 'assistant',
     content: i === messages.length - 1 ? prompt : m.content,
   }));
 
-  const response = await anthropic.messages.create({
-    model: config.model,
-    max_tokens: 32000,
-    system: SYSTEM,
-    messages: apiMessages,
-  });
+  let reply = '';
+  let retries = config.retries;
 
-  // Track tokens
-  totalTokens += (response.usage?.input_tokens || 0) + (response.usage?.output_tokens || 0);
-  memory.stats.tokens += (response.usage?.input_tokens || 0) + (response.usage?.output_tokens || 0);
+  while (retries >= 0) {
+    try {
+      // Stream for speed
+      const stream = await anthropic.messages.stream({
+        model: config.model,
+        max_tokens: 16000,
+        system: SYSTEM,
+        messages: apiMsgs,
+      });
 
-  const block = response.content.find(b => b.type === 'text');
-  if (!block || block.type !== 'text') throw new Error('Empty response');
+      process.stdout.write('\n  ');
 
-  const reply = block.text;
+      for await (const event of stream) {
+        if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
+          const text = event.delta.text;
+          reply += text;
+
+          // Don't print HTML to terminal (too verbose)
+          if (!reply.includes('```html') || reply.includes('```\n')) {
+            // Only print non-HTML parts
+            const clean = text.replace(/```html[\s\S]*?```/g, '');
+            if (clean) process.stdout.write(clean);
+          }
+        }
+      }
+
+      const finalMsg = await stream.finalMessage();
+      tokens += (finalMsg.usage?.input_tokens || 0) + (finalMsg.usage?.output_tokens || 0);
+      memory.tokens += (finalMsg.usage?.input_tokens || 0) + (finalMsg.usage?.output_tokens || 0);
+
+      break; // Success
+    } catch (err: any) {
+      retries--;
+      if (retries < 0) throw err;
+      // Quick retry
+      await new Promise(r => setTimeout(r, 500));
+    }
+  }
+
   messages.push({ role: 'assistant', content: reply });
 
-  // Extract HTML
+  // Extract & save HTML
   const match = reply.match(/```html\s*([\s\S]*?)```/);
   if (match) {
-    currentHTML = match[1].trim();
-    const id = `design_${Date.now()}`;
-    designs.push({ id, html: currentHTML, prompt: input, timestamp: Date.now() });
-    save(currentHTML);
-    memory.stats.designs++;
-    memory.recentDesigns.unshift({ prompt: input, timestamp: Date.now() });
-    memory.recentDesigns = memory.recentDesigns.slice(0, 20);
+    html = match[1].trim();
+    designs.push({ html, prompt: input, ts: Date.now() });
+    save(html);
+    memory.designs++;
+    memory.lastPrompts.unshift(input);
+    memory.lastPrompts = memory.lastPrompts.slice(0, 10);
     saveMemory();
+    process.stdout.write(chalk.green('\n  ✓ Saved'));
   }
+
+  process.stdout.write('\n\n');
+  return reply;
+}
+
+// Non-streaming fallback (faster for short responses)
+async function quickChat(input: string): Promise<string> {
+  messages.push({ role: 'user', content: input });
+
+  const apiMsgs = messages.map(m => ({
+    role: m.role as 'user' | 'assistant',
+    content: m.content,
+  }));
+
+  const response = await anthropic.messages.create({
+    model: config.model,
+    max_tokens: 4000,
+    system: SYSTEM,
+    messages: apiMsgs,
+  });
+
+  tokens += (response.usage?.input_tokens || 0) + (response.usage?.output_tokens || 0);
+
+  const block = response.content.find(b => b.type === 'text');
+  const reply = block?.type === 'text' ? block.text : '';
+  messages.push({ role: 'assistant', content: reply });
 
   return reply;
 }
 
 // ═══════════════════════════════════════════════════════════════
-// FILE OPERATIONS
+// FILE OPS - No permission needed
 // ═══════════════════════════════════════════════════════════════
 
-function save(html: string, filename = 'index.html'): void {
+function save(content: string, name = 'index.html') {
   fs.mkdirSync(config.outputDir, { recursive: true });
-  fs.writeFileSync(path.join(config.outputDir, filename), html);
+  fs.writeFileSync(path.join(config.outputDir, name), content);
 }
 
-function open(target?: string): void {
+function open(target?: string) {
   if (!config.autoOpen) return;
   const file = target || path.resolve(config.outputDir, 'index.html');
   try {
     const cmd = process.platform === 'darwin' ? 'open' : process.platform === 'win32' ? 'start ""' : 'xdg-open';
     execSync(`${cmd} "${file}"`, { stdio: 'ignore' });
-  } catch { /* ignore */ }
+  } catch {}
 }
 
-function readFile(filepath: string): string | null {
-  try {
-    return fs.readFileSync(filepath, 'utf8');
-  } catch {
-    return null;
-  }
+function read(file: string): string | null {
+  try { return fs.readFileSync(file, 'utf8'); } catch { return null; }
 }
 
-function writeFile(filepath: string, content: string): boolean {
-  try {
-    fs.mkdirSync(path.dirname(filepath), { recursive: true });
-    fs.writeFileSync(filepath, content);
-    return true;
-  } catch {
-    return false;
-  }
+function ls(dir = '.'): string[] {
+  try { return fs.readdirSync(dir); } catch { return []; }
 }
 
-function listFiles(dir: string): string[] {
-  try {
-    return fs.readdirSync(dir);
-  } catch {
-    return [];
-  }
+function bash(cmd: string): string {
+  try { return execSync(cmd, { encoding: 'utf8', timeout: 30000 }); } catch (e: any) { return e.message; }
 }
 
 // ═══════════════════════════════════════════════════════════════
-// PREVIEW SERVER
+// LIVE SERVER - Auto-reload
 // ═══════════════════════════════════════════════════════════════
 
-function startServer(port = 3333): void {
+function serve(port = 3333) {
   if (server) return;
+
+  let lastMod = 0;
 
   server = http.createServer((req, res) => {
     const file = path.join(config.outputDir, 'index.html');
+
+    if (req.url === '/__poll') {
+      const mod = fs.existsSync(file) ? fs.statSync(file).mtimeMs : 0;
+      res.end(mod > lastMod ? 'reload' : 'ok');
+      lastMod = mod;
+      return;
+    }
+
     if (fs.existsSync(file)) {
-      // Inject auto-reload script
-      let html = fs.readFileSync(file, 'utf8');
-      const reloadScript = `<script>setInterval(()=>fetch('/check').then(r=>r.text()).then(t=>t!==document.body.innerHTML.length.toString()&&location.reload()),1000)</script>`;
-      html = html.replace('</body>', `${reloadScript}</body>`);
-      res.writeHead(200, { 'Content-Type': 'text/html', 'Cache-Control': 'no-cache' });
-      res.end(html);
-    } else if (req.url === '/check') {
-      const file = path.join(config.outputDir, 'index.html');
-      const size = fs.existsSync(file) ? fs.statSync(file).size.toString() : '0';
-      res.end(size);
+      let content = fs.readFileSync(file, 'utf8');
+      // Inject auto-reload
+      const script = `<script>setInterval(()=>fetch('/__poll').then(r=>r.text()).then(t=>t==='reload'&&location.reload()),500)</script>`;
+      content = content.replace('</body>', script + '</body>');
+      res.writeHead(200, { 'Content-Type': 'text/html' });
+      res.end(content);
     } else {
-      res.writeHead(404);
-      res.end('No design yet');
+      res.writeHead(200, { 'Content-Type': 'text/html' });
+      res.end('<html><body style="background:#09090b;color:#fff;font-family:system-ui;display:grid;place-items:center;height:100vh;margin:0"><h1>Waiting for design...</h1></body></html>');
     }
   });
 
   server.listen(port, () => {
-    console.log(chalk.green(`\n  Live preview: http://localhost:${port}\n`));
+    console.log(chalk.green(`\n  Live: http://localhost:${port}\n`));
     open(`http://localhost:${port}`);
   });
 }
 
 // ═══════════════════════════════════════════════════════════════
-// BASH EXECUTION
+// COMMANDS - No confirmations, just do it
 // ═══════════════════════════════════════════════════════════════
 
-function runBash(cmd: string): { stdout: string; stderr: string; code: number } {
-  try {
-    const stdout = execSync(cmd, { encoding: 'utf8', timeout: 30000 });
-    return { stdout, stderr: '', code: 0 };
-  } catch (err: any) {
-    return { stdout: err.stdout || '', stderr: err.stderr || err.message, code: err.status || 1 };
-  }
-}
+const CMDS: Record<string, (a: string) => void> = {
+  help: () => console.log(`
+  ${chalk.bold('Commands')}
+  /clear      Reset conversation
+  /history    Show designs
+  /restore N  Restore design N
+  /export     Save copy
+  /load FILE  Load HTML
+  /ls [DIR]   List files
+  /cat FILE   Read file
+  /bash CMD   Run command
+  /model      Show/set model
+  /stats      Show stats
+  /config     Show config
+  /set K V    Set config
+  `),
 
-// ═══════════════════════════════════════════════════════════════
-// SLASH COMMANDS
-// ═══════════════════════════════════════════════════════════════
+  clear: () => { messages = []; html = null; console.clear(); banner(); },
 
-const COMMANDS: Record<string, { desc: string; fn: (args: string) => void }> = {
-  help: {
-    desc: 'Show all commands',
-    fn: () => {
-      console.log(chalk.cyan('\n  Slash Commands:\n'));
-      Object.entries(COMMANDS).forEach(([name, { desc }]) => {
-        console.log(`  ${chalk.cyan('/' + name.padEnd(12))} ${chalk.gray(desc)}`);
-      });
-      console.log(chalk.cyan('\n  Quick Commands:\n'));
-      console.log(`  ${chalk.cyan('open'.padEnd(12))} ${chalk.gray('Open design in browser')}`);
-      console.log(`  ${chalk.cyan('live'.padEnd(12))} ${chalk.gray('Start live preview server')}`);
-      console.log(`  ${chalk.cyan('history'.padEnd(12))} ${chalk.gray('Show design history')}`);
-      console.log(`  ${chalk.cyan('clear'.padEnd(12))} ${chalk.gray('Clear conversation')}`);
-      console.log(`  ${chalk.cyan('exit'.padEnd(12))} ${chalk.gray('Quit browsr')}`);
-      console.log();
-    }
+  history: () => {
+    if (!designs.length) { console.log(chalk.yellow('\n  No history\n')); return; }
+    console.log(chalk.cyan('\n  History:'));
+    designs.slice(-10).forEach((d, i) => {
+      console.log(chalk.gray(`  ${i + 1}. ${d.prompt.slice(0, 50)}${d.prompt.length > 50 ? '...' : ''}`));
+    });
+    console.log();
   },
-  clear: {
-    desc: 'Clear conversation and start fresh',
-    fn: () => {
-      messages = [];
-      currentHTML = null;
-      console.clear();
-      showBanner();
-      console.log(chalk.green('  Fresh start.\n'));
-    }
-  },
-  compact: {
-    desc: 'Compact conversation history',
-    fn: () => {
-      const keep = messages.slice(-6);
-      messages = keep;
-      console.log(chalk.green(`\n  Compacted to ${keep.length} messages.\n`));
-    }
-  },
-  config: {
-    desc: 'View or set config (e.g., /config autoOpen false)',
-    fn: (args) => {
-      if (!args) {
-        console.log(chalk.cyan('\n  Config:\n'));
-        Object.entries(config).forEach(([k, v]) => {
-          console.log(`  ${chalk.cyan(k.padEnd(12))} ${chalk.white(String(v))}`);
-        });
-        console.log();
-      } else {
-        const [key, ...rest] = args.split(' ');
-        const value = rest.join(' ');
-        if (key in config) {
-          (config as any)[key] = value === 'true' ? true : value === 'false' ? false : value;
-          saveConfig();
-          console.log(chalk.green(`\n  Set ${key} = ${value}\n`));
-        } else {
-          console.log(chalk.yellow(`\n  Unknown config: ${key}\n`));
-        }
-      }
-    }
-  },
-  memory: {
-    desc: 'Show memory and stats',
-    fn: () => {
-      console.log(chalk.cyan('\n  Memory:\n'));
-      console.log(`  ${chalk.gray('Designs created:')} ${memory.stats.designs}`);
-      console.log(`  ${chalk.gray('Total tokens:')} ${memory.stats.tokens.toLocaleString()}`);
-      console.log(`  ${chalk.gray('Session tokens:')} ${totalTokens.toLocaleString()}`);
-      if (memory.recentDesigns.length > 0) {
-        console.log(chalk.cyan('\n  Recent:\n'));
-        memory.recentDesigns.slice(0, 5).forEach((d, i) => {
-          const text = d.prompt.length > 40 ? d.prompt.slice(0, 40) + '...' : d.prompt;
-          console.log(chalk.gray(`  ${i + 1}. ${text}`));
-        });
-      }
-      console.log();
-    }
-  },
-  model: {
-    desc: 'View or change model',
-    fn: (args) => {
-      if (!args) {
-        console.log(chalk.cyan(`\n  Current model: ${config.model}\n`));
-      } else {
-        config.model = args;
-        saveConfig();
-        console.log(chalk.green(`\n  Model set to: ${args}\n`));
-      }
-    }
-  },
-  cost: {
-    desc: 'Show estimated API cost',
-    fn: () => {
-      const inputCost = (totalTokens * 0.003) / 1000;
-      const outputCost = (totalTokens * 0.015) / 1000;
-      const total = inputCost + outputCost;
-      console.log(chalk.cyan(`\n  Session: ~$${total.toFixed(4)} (${totalTokens.toLocaleString()} tokens)\n`));
-    }
-  },
-  export: {
-    desc: 'Export current design to file',
-    fn: (args) => {
-      if (!currentHTML) {
-        console.log(chalk.yellow('\n  No design to export.\n'));
-        return;
-      }
-      const filename = args || `browsr-${Date.now()}.html`;
-      writeFile(filename, currentHTML);
-      console.log(chalk.green(`\n  Exported: ${filename}\n`));
-    }
-  },
-  load: {
-    desc: 'Load HTML file as current design',
-    fn: (args) => {
-      if (!args) {
-        console.log(chalk.yellow('\n  Usage: /load filename.html\n'));
-        return;
-      }
-      const content = readFile(args);
-      if (content) {
-        currentHTML = content;
-        save(currentHTML);
-        console.log(chalk.green(`\n  Loaded: ${args}\n`));
-        open();
-      } else {
-        console.log(chalk.red(`\n  Can't read: ${args}\n`));
-      }
-    }
-  },
-  ls: {
-    desc: 'List files in directory',
-    fn: (args) => {
-      const dir = args || '.';
-      const files = listFiles(dir);
-      if (files.length === 0) {
-        console.log(chalk.yellow(`\n  Empty or can't read: ${dir}\n`));
-      } else {
-        console.log(chalk.cyan(`\n  ${dir}:\n`));
-        files.forEach(f => console.log(`  ${f}`));
-        console.log();
-      }
-    }
-  },
-  cat: {
-    desc: 'Read file contents',
-    fn: (args) => {
-      if (!args) {
-        console.log(chalk.yellow('\n  Usage: /cat filename\n'));
-        return;
-      }
-      const content = readFile(args);
-      if (content) {
-        console.log('\n' + content + '\n');
-      } else {
-        console.log(chalk.red(`\n  Can't read: ${args}\n`));
-      }
-    }
-  },
-  bash: {
-    desc: 'Run shell command',
-    fn: (args) => {
-      if (!args) {
-        console.log(chalk.yellow('\n  Usage: /bash command\n'));
-        return;
-      }
-      const { stdout, stderr, code } = runBash(args);
-      if (stdout) console.log('\n' + stdout);
-      if (stderr) console.log(chalk.red(stderr));
-      if (code !== 0) console.log(chalk.yellow(`\n  Exit code: ${code}\n`));
-    }
-  },
-  history: {
-    desc: 'Show design history',
-    fn: () => {
-      if (designs.length === 0) {
-        console.log(chalk.yellow('\n  No history yet.\n'));
-        return;
-      }
-      console.log(chalk.cyan('\n  Design History:\n'));
-      designs.forEach((d, i) => {
-        const time = new Date(d.timestamp).toLocaleTimeString();
-        const text = d.prompt.length > 40 ? d.prompt.slice(0, 40) + '...' : d.prompt;
-        console.log(chalk.gray(`  ${i + 1}. [${time}] ${text}`));
-      });
-      console.log();
-    }
-  },
-  restore: {
-    desc: 'Restore design from history (e.g., /restore 1)',
-    fn: (args) => {
-      const n = parseInt(args);
-      if (!n || n < 1 || n > designs.length) {
-        console.log(chalk.yellow(`\n  Usage: /restore 1-${designs.length}\n`));
-        return;
-      }
-      currentHTML = designs[n - 1].html;
-      save(currentHTML);
-      console.log(chalk.green(`\n  Restored #${n}\n`));
-      open();
-    }
-  },
-  version: {
-    desc: 'Show version',
-    fn: () => {
-      console.log(chalk.cyan(`\n  browsr v${VERSION}\n`));
-    }
-  },
-  doctor: {
-    desc: 'Check system setup',
-    fn: () => {
-      console.log(chalk.cyan('\n  System Check:\n'));
 
-      // API key
-      const hasKey = !!process.env.ANTHROPIC_API_KEY;
-      console.log(`  ${hasKey ? chalk.green('✓') : chalk.red('✗')} API key ${hasKey ? 'set' : 'missing'}`);
+  restore: (a) => {
+    const n = parseInt(a);
+    if (!n || n < 1 || n > designs.length) { console.log(chalk.yellow(`\n  Use 1-${designs.length}\n`)); return; }
+    html = designs[n - 1].html;
+    save(html);
+    console.log(chalk.green(`\n  Restored #${n}\n`));
+    open();
+  },
 
-      // Node version
-      const nodeVer = process.version;
-      console.log(`  ${chalk.green('✓')} Node ${nodeVer}`);
+  export: (a) => {
+    if (!html) { console.log(chalk.yellow('\n  Nothing to export\n')); return; }
+    const name = a || `design-${Date.now()}.html`;
+    fs.writeFileSync(name, html);
+    console.log(chalk.green(`\n  Exported: ${name}\n`));
+  },
 
-      // Output dir
-      const canWrite = (() => {
-        try {
-          fs.mkdirSync(config.outputDir, { recursive: true });
-          return true;
-        } catch { return false; }
-      })();
-      console.log(`  ${canWrite ? chalk.green('✓') : chalk.red('✗')} Output dir ${canWrite ? 'writable' : 'not writable'}`);
+  load: (a) => {
+    if (!a) { console.log(chalk.yellow('\n  /load file.html\n')); return; }
+    const content = read(a);
+    if (content) { html = content; save(html); console.log(chalk.green(`\n  Loaded\n`)); open(); }
+    else console.log(chalk.red(`\n  Can't read ${a}\n`));
+  },
 
-      // Browser
-      const hasBrowser = process.platform === 'darwin' || process.platform === 'win32' || process.platform === 'linux';
-      console.log(`  ${hasBrowser ? chalk.green('✓') : chalk.yellow('?')} Browser support`);
+  ls: (a) => {
+    const files = ls(a || '.');
+    if (!files.length) console.log(chalk.yellow('\n  Empty\n'));
+    else { console.log(); files.forEach(f => console.log(`  ${f}`)); console.log(); }
+  },
 
-      console.log();
-    }
-  }
+  cat: (a) => {
+    if (!a) { console.log(chalk.yellow('\n  /cat file\n')); return; }
+    const content = read(a);
+    if (content) console.log('\n' + content + '\n');
+    else console.log(chalk.red(`\n  Can't read\n`));
+  },
+
+  bash: (a) => {
+    if (!a) { console.log(chalk.yellow('\n  /bash cmd\n')); return; }
+    console.log('\n' + bash(a) + '\n');
+  },
+
+  model: (a) => {
+    if (a) { config.model = a; console.log(chalk.green(`\n  Model: ${a}\n`)); }
+    else console.log(chalk.cyan(`\n  Model: ${config.model}\n`));
+  },
+
+  stats: () => {
+    console.log(chalk.cyan(`
+  Session:  ${tokens.toLocaleString()} tokens
+  Total:    ${memory.tokens.toLocaleString()} tokens
+  Designs:  ${memory.designs}
+  Cost:     ~$${((tokens * 0.003 + tokens * 0.015) / 1000).toFixed(4)}
+`));
+  },
+
+  config: () => {
+    console.log(chalk.cyan('\n  Config:'));
+    Object.entries(config).forEach(([k, v]) => console.log(`  ${k}: ${v}`));
+    console.log();
+  },
+
+  set: (a) => {
+    const [k, ...rest] = a.split(' ');
+    const v = rest.join(' ');
+    if (k in config) {
+      (config as any)[k] = v === 'true' ? true : v === 'false' ? false : isNaN(Number(v)) ? v : Number(v);
+      console.log(chalk.green(`\n  ${k} = ${(config as any)[k]}\n`));
+    } else console.log(chalk.yellow(`\n  Unknown: ${k}\n`));
+  },
+
+  doctor: () => {
+    console.log(chalk.cyan('\n  Check:'));
+    console.log(`  ${process.env.ANTHROPIC_API_KEY ? chalk.green('✓') : chalk.red('✗')} API key`);
+    console.log(`  ${chalk.green('✓')} Node ${process.version}`);
+    console.log(`  ${chalk.green('✓')} Platform ${process.platform}`);
+    console.log();
+  },
+
+  version: () => console.log(chalk.cyan(`\n  browsr v${VERSION}\n`)),
 };
 
 // ═══════════════════════════════════════════════════════════════
-// UI
+// UI - Minimal, fast
 // ═══════════════════════════════════════════════════════════════
 
-function showBanner(): void {
+function banner() {
   console.log(`
   ${chalk.bold.cyan('browsr')} ${chalk.gray(`v${VERSION}`)}
-  ${chalk.gray('AI Design Studio')}
-
-  ${chalk.gray('Create stunning designs with natural language.')}
-  ${chalk.gray('Type /help for commands.')}
+  ${chalk.gray('AI Design Studio • Type anything • /help for commands')}
 `);
 }
 
-function format(text: string): string {
-  return text.replace(/```html[\s\S]*?```/g, chalk.green('✓ Design saved → ./output/index.html')).trim();
-}
-
 // ═══════════════════════════════════════════════════════════════
-// MAIN
+// MAIN LOOP - No friction, no permissions
 // ═══════════════════════════════════════════════════════════════
 
 export async function startChat(): Promise<void> {
-  loadConfig();
   loadMemory();
-  memory.stats.sessions++;
-  saveMemory();
-
   console.clear();
-  showBanner();
+  banner();
 
-  const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout,
-  });
+  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
 
-  // Handle Ctrl+C gracefully
   rl.on('close', () => {
     if (server) server.close();
-    console.log(chalk.gray('\n  ✌️\n'));
+    saveMemory();
     process.exit(0);
   });
 
-  const prompt = (): void => {
+  const prompt = () => {
     rl.question(chalk.cyan('› '), async (input) => {
       const cmd = input.trim();
-
       if (!cmd) { prompt(); return; }
 
       // Slash commands
       if (cmd.startsWith('/')) {
         const [name, ...rest] = cmd.slice(1).split(' ');
-        const args = rest.join(' ');
-        const handler = COMMANDS[name.toLowerCase()];
-        if (handler) {
-          handler.fn(args);
-        } else {
-          console.log(chalk.yellow(`\n  Unknown command: /${name}. Try /help\n`));
-        }
+        const handler = CMDS[name.toLowerCase()];
+        if (handler) handler(rest.join(' '));
+        else console.log(chalk.yellow(`\n  Unknown: /${name}\n`));
         prompt();
         return;
       }
 
-      // Quick commands (no slash)
+      // Quick commands
       const lower = cmd.toLowerCase();
+      if (/^(q|quit|exit|bye)$/.test(lower)) { rl.close(); return; }
+      if (/^(open|o|show|preview|p)$/.test(lower)) { if (html) { open(); console.log(chalk.green('\n  Opened\n')); } else console.log(chalk.yellow('\n  Nothing yet\n')); prompt(); return; }
+      if (/^(live|serve|server|watch)$/.test(lower)) { serve(); prompt(); return; }
+      if (/^(clear|reset|new)$/.test(lower)) { CMDS.clear(''); prompt(); return; }
+      if (/^(history|h)$/.test(lower)) { CMDS.history(''); prompt(); return; }
+      if (/^(help|\?)$/.test(lower)) { CMDS.help(''); prompt(); return; }
 
-      if (/^(exit|quit|q|bye)$/.test(lower)) {
-        if (server) server.close();
-        saveMemory();
-        console.log(chalk.gray('\n  ✌️\n'));
-        process.exit(0);
-      }
-
-      if (/^(open|o|preview|p|show)$/.test(lower)) {
-        if (currentHTML) {
-          config.autoOpen = true;
-          open();
-          console.log(chalk.green('\n  Opened.\n'));
-        } else {
-          console.log(chalk.yellow('\n  No design yet.\n'));
-        }
-        prompt(); return;
-      }
-
-      if (/^(live|serve|server|watch)$/.test(lower)) {
-        startServer();
-        prompt(); return;
-      }
-
-      if (/^(clear|reset|new)$/.test(lower)) {
-        COMMANDS.clear.fn('');
-        prompt(); return;
-      }
-
-      if (/^(history|h)$/.test(lower)) {
-        COMMANDS.history.fn('');
-        prompt(); return;
-      }
-
-      if (/^restore \d+$/.test(lower)) {
-        COMMANDS.restore.fn(lower.split(' ')[1]);
-        prompt(); return;
-      }
-
-      if (/^help$/.test(lower)) {
-        COMMANDS.help.fn('');
-        prompt(); return;
-      }
-
-      // AI interaction
-      const spinner = ora({ text: chalk.gray('Thinking...'), color: 'cyan' }).start();
-
+      // AI - Just do it, no spinner (streaming shows progress)
       try {
-        const response = await chat(cmd);
-        spinner.stop();
-
-        const output = format(response);
-        console.log('\n' + output.split('\n').map(l => '  ' + l).join('\n') + '\n');
-
-        if (response.includes('```html')) {
-          open();
-        }
+        await streamChat(cmd);
+        if (html) open();
       } catch (err: any) {
-        spinner.stop();
-        const msg = err.message || String(err);
-
-        if (msg.includes('API') || msg.includes('key') || msg.includes('401') || msg.includes('auth')) {
-          console.log(chalk.red('\n  API key issue. Run /doctor to check setup.\n'));
-        } else if (msg.includes('rate') || msg.includes('429')) {
-          console.log(chalk.yellow('\n  Rate limited. Wait a moment.\n'));
+        const msg = err.message || '';
+        if (msg.includes('API') || msg.includes('401') || msg.includes('key')) {
+          console.log(chalk.red('\n  API key issue. Run /doctor\n'));
+        } else if (msg.includes('429') || msg.includes('rate')) {
+          console.log(chalk.yellow('\n  Rate limited. Retry in a sec.\n'));
         } else {
           console.log(chalk.red(`\n  Error: ${msg}\n`));
         }

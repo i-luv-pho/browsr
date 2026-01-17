@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>browsr - AI Design in Your Terminal</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #fafafa;
+            padding: 20px;
+        }
+
+        .logo {
+            font-family: 'SF Mono', 'Monaco', 'Inconsolata', monospace;
+            font-size: 14px;
+            line-height: 1.2;
+            color: #0ea5e9;
+            white-space: pre;
+            margin-bottom: 40px;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 48px;
+            font-weight: 700;
+            color: #0f172a;
+            margin-bottom: 16px;
+            letter-spacing: -1px;
+        }
+
+        .tagline {
+            font-size: 20px;
+            color: #64748b;
+            margin-bottom: 48px;
+        }
+
+        .install-box {
+            background: #0f172a;
+            border-radius: 12px;
+            padding: 24px 32px;
+            margin-bottom: 24px;
+            position: relative;
+            max-width: 100%;
+            overflow-x: auto;
+        }
+
+        .install-command {
+            font-family: 'SF Mono', 'Monaco', 'Inconsolata', monospace;
+            font-size: 16px;
+            color: #e2e8f0;
+            white-space: nowrap;
+        }
+
+        .install-command .curl {
+            color: #22d3ee;
+        }
+
+        .install-command .url {
+            color: #a78bfa;
+        }
+
+        .install-command .pipe {
+            color: #64748b;
+        }
+
+        .install-command .bash {
+            color: #4ade80;
+        }
+
+        .copy-btn {
+            position: absolute;
+            right: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: #1e293b;
+            border: none;
+            color: #94a3b8;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .copy-btn:hover {
+            background: #334155;
+            color: #e2e8f0;
+        }
+
+        .copy-btn.copied {
+            background: #065f46;
+            color: #6ee7b7;
+        }
+
+        .or {
+            color: #94a3b8;
+            margin-bottom: 16px;
+        }
+
+        .github-link {
+            color: #0ea5e9;
+            text-decoration: none;
+            font-size: 16px;
+            transition: color 0.2s;
+        }
+
+        .github-link:hover {
+            color: #0284c7;
+            text-decoration: underline;
+        }
+
+        .features {
+            display: flex;
+            gap: 48px;
+            margin-top: 64px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .feature {
+            text-align: center;
+            max-width: 200px;
+        }
+
+        .feature-icon {
+            font-size: 32px;
+            margin-bottom: 12px;
+        }
+
+        .feature-title {
+            font-weight: 600;
+            color: #0f172a;
+            margin-bottom: 4px;
+        }
+
+        .feature-desc {
+            font-size: 14px;
+            color: #64748b;
+        }
+
+        @media (max-width: 600px) {
+            h1 {
+                font-size: 32px;
+            }
+            .logo {
+                font-size: 10px;
+            }
+            .install-box {
+                padding: 16px;
+            }
+            .install-command {
+                font-size: 12px;
+            }
+            .copy-btn {
+                position: static;
+                transform: none;
+                margin-top: 16px;
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="logo">
+██████╗ ██████╗  ██████╗ ██╗    ██╗███████╗██████╗
+██╔══██╗██╔══██╗██╔═══██╗██║    ██║██╔════╝██╔══██╗
+██████╔╝██████╔╝██║   ██║██║ █╗ ██║███████╗██████╔╝
+██╔══██╗██╔══██╗██║   ██║██║███╗██║╚════██║██╔══██╗
+██████╔╝██║  ██║╚██████╔╝╚███╔███╔╝███████║██║  ██║
+╚═════╝ ╚═╝  ╚═╝ ╚═════╝  ╚══╝╚══╝ ╚══════╝╚═╝  ╚═╝
+    </div>
+
+    <h1>browsr</h1>
+    <p class="tagline">AI design generation in your terminal. Like Canva, but code.</p>
+
+    <div class="install-box">
+        <code class="install-command">
+            <span class="curl">curl</span> <span class="url">-fsSL https://raw.githubusercontent.com/i-luv-pho/browsr/main/install.sh</span> <span class="pipe">|</span> <span class="bash">bash</span>
+        </code>
+        <button class="copy-btn" onclick="copyCommand()">Copy</button>
+    </div>
+
+    <p class="or">or</p>
+    <a href="https://github.com/i-luv-pho/browsr" class="github-link">View on GitHub</a>
+
+    <div class="features">
+        <div class="feature">
+            <div class="feature-icon">&#9889;</div>
+            <div class="feature-title">Instant</div>
+            <div class="feature-desc">One command installs everything</div>
+        </div>
+        <div class="feature">
+            <div class="feature-icon">&#128187;</div>
+            <div class="feature-title">Terminal Native</div>
+            <div class="feature-desc">Works where you work</div>
+        </div>
+        <div class="feature">
+            <div class="feature-icon">&#128640;</div>
+            <div class="feature-title">Real Code</div>
+            <div class="feature-desc">Outputs HTML/CSS/JS you own</div>
+        </div>
+    </div>
+
+    <script>
+        function copyCommand() {
+            const cmd = 'curl -fsSL https://raw.githubusercontent.com/i-luv-pho/browsr/main/install.sh | bash';
+            navigator.clipboard.writeText(cmd);
+            const btn = document.querySelector('.copy-btn');
+            btn.textContent = 'Copied!';
+            btn.classList.add('copied');
+            setTimeout(() => {
+                btn.textContent = 'Copy';
+                btn.classList.remove('copied');
+            }, 2000);
+        }
+    </script>
+</body>
+</html>
