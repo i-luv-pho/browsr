@@ -14,28 +14,33 @@ import { startChat } from './commands/chat';
 
 const program = new Command();
 
-// ASCII art banner
+// Hacker green theme
+const g = chalk.green;
+const gg = chalk.greenBright;
+const gd = chalk.gray;
+
+// ASCII art banner - HACKER GREEN
 const banner = `
-╔═══════════════════════════════════════════════════════════════╗
-║                                                               ║
-║   ██████╗ ██████╗  ██████╗ ██╗    ██╗███████╗██████╗         ║
-║   ██╔══██╗██╔══██╗██╔═══██╗██║    ██║██╔════╝██╔══██╗        ║
-║   ██████╔╝██████╔╝██║   ██║██║ █╗ ██║███████╗██████╔╝        ║
-║   ██╔══██╗██╔══██╗██║   ██║██║███╗██║╚════██║██╔══██╗        ║
-║   ██████╔╝██║  ██║╚██████╔╝╚███╔███╔╝███████║██║  ██║        ║
-║   ╚═════╝ ╚═╝  ╚═╝ ╚═════╝  ╚══╝╚══╝ ╚══════╝╚═╝  ╚═╝        ║
-║                                                               ║
-║   AI-powered design generation for serious builders           ║
-║   Create professional HTML/CSS from natural language          ║
-║                                                               ║
-╚═══════════════════════════════════════════════════════════════╝
+${g('╔═══════════════════════════════════════════════════════════════╗')}
+${g('║')}                                                               ${g('║')}
+${g('║')}   ${gg('██████╗ ██████╗  ██████╗ ██╗    ██╗███████╗██████╗')}         ${g('║')}
+${g('║')}   ${gg('██╔══██╗██╔══██╗██╔═══██╗██║    ██║██╔════╝██╔══██╗')}        ${g('║')}
+${g('║')}   ${gg('██████╔╝██████╔╝██║   ██║██║ █╗ ██║███████╗██████╔╝')}        ${g('║')}
+${g('║')}   ${gg('██╔══██╗██╔══██╗██║   ██║██║███╗██║╚════██║██╔══██╗')}        ${g('║')}
+${g('║')}   ${gg('██████╔╝██║  ██║╚██████╔╝╚███╔███╔╝███████║██║  ██║')}        ${g('║')}
+${g('║')}   ${gg('╚═════╝ ╚═╝  ╚═╝ ╚═════╝  ╚══╝╚══╝ ╚══════╝╚═╝  ╚═╝')}        ${g('║')}
+${g('║')}                                                               ${g('║')}
+${g('║')}   ${gd('FREE AI design generation • Powered by Groq')}                ${g('║')}
+${g('║')}   ${gd('Create professional HTML/CSS from natural language')}         ${g('║')}
+${g('║')}                                                               ${g('║')}
+${g('╚═══════════════════════════════════════════════════════════════╝')}
 `;
 
 program
   .name('browsr')
-  .description('browsr - AI-powered design builder that outputs real HTML/CSS/JS')
-  .version('1.0.0')
-  .addHelpText('beforeAll', chalk.cyan(banner));
+  .description('browsr - FREE AI design builder that outputs real HTML/CSS/JS')
+  .version('2.1.0')
+  .addHelpText('beforeAll', banner);
 
 // Create command - main design generation
 program
@@ -47,7 +52,7 @@ program
   .option('-o, --output <dir>', 'Output directory', './output')
   .option('--no-preview', 'Skip automatic preview')
   .action(async (prompt: string, options) => {
-    console.log(chalk.cyan(banner));
+    console.log(banner);
     console.log();
     await create(prompt, options);
   });
@@ -82,7 +87,7 @@ program
   .command('types')
   .description('List all available design types')
   .action(() => {
-    console.log(chalk.cyan('\nAvailable design types:\n'));
+    console.log(g('\nAvailable design types:\n'));
 
     const types = [
       { name: 'pitch-deck', desc: 'Startup pitch deck for investors' },
@@ -103,11 +108,11 @@ program
     ];
 
     types.forEach(({ name, desc }) => {
-      console.log(`  ${chalk.green(name.padEnd(18))} ${chalk.gray(desc)}`);
+      console.log(`  ${gg(name.padEnd(18))} ${gd(desc)}`);
     });
 
-    console.log(chalk.cyan('\nStyles available: ') + chalk.white('minimal, bold, elegant, modern, professional'));
-    console.log(chalk.gray('\nExample: browsr create "A pitch deck for my AI startup" -t pitch-deck -s modern\n'));
+    console.log(g('\nStyles available: ') + chalk.white('minimal, bold, elegant, modern, professional'));
+    console.log(gd('\nExample: browsr create "A pitch deck for my AI startup" -t pitch-deck -s modern\n'));
   });
 
 // Chat mode - interactive like Claude Code (default)

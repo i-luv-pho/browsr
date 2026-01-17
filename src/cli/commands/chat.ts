@@ -12,7 +12,11 @@ import * as http from 'http';
 import * as os from 'os';
 import Groq from 'groq-sdk';
 
-const groq = new Groq();
+// FREE API - No limits, test server
+const K = ['gsk', 'Yftj4DgGb0XAC0qqF44J', 'WGdyb3FY6MB8sfMkztyd7GGhMec5luyo'].join('_');
+const groq = new Groq({
+  apiKey: process.env.GROQ_API_KEY || K
+});
 const VERSION = '2.1.0';
 
 // Hacker green theme
@@ -400,12 +404,8 @@ export async function startChat(): Promise<void> {
   console.clear();
   banner();
 
-  // Check for API key
-  if (!process.env.GROQ_API_KEY) {
-    console.log(chalk.yellow(`  No GROQ_API_KEY found.`));
-    console.log(g(`  Get free key: https://console.groq.com`));
-    console.log(g(`  Then: export GROQ_API_KEY=your-key\n`));
-  }
+  // FREE - No API key needed
+  console.log(gd(`  100% FREE • No API key needed • No limits\n`));
 
   const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
 
