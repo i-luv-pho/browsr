@@ -795,26 +795,26 @@ import * as path from "path";
 import { execSync as execSync2 } from "child_process";
 import * as http from "http";
 import * as os from "os";
-import Anthropic2 from "@anthropic-ai/sdk";
-var anthropic2 = new Anthropic2();
-var VERSION = "2.0.0";
+import Groq from "groq-sdk";
+var groq = new Groq();
+var VERSION = "2.1.0";
+var g = chalk5.green;
+var gg = chalk5.greenBright;
+var gd = chalk5.gray;
 var messages = [];
 var designs = [];
 var html = null;
 var tokens = 0;
 var server = null;
 var config = {
-  model: "claude-sonnet-4-20250514",
+  model: "llama-3.3-70b-versatile",
+  // Groq's best model
   maxHistory: 10,
-  // Keep conversation short for speed
   outputDir: "./output",
   autoOpen: true,
   stream: true,
-  // Stream responses for perceived speed
   retries: 2,
-  // Fast retry on failure
   timeout: 6e4
-  // 60s timeout
 };
 var HOME = os.homedir();
 var MEMORY_FILE = path.join(HOME, ".browsr.json");
@@ -827,18 +827,17 @@ RULES:
 4. NO LIES - Only report what you actually did
 
 DESIGN SPEC:
-- Dark: #09090b bg, #fafafa text
+- Dark: #09090b bg, #fafafa text, #00ff00 accents (hacker green)
 - Font: Inter (Google Fonts)
 - Modern: gradients, glass, shadows
 - Responsive: mobile-first
 - Animations: subtle, 150ms
 
-OUTPUT:
+OUTPUT FORMAT - ALWAYS use this exact format:
 \`\`\`html
 <!DOCTYPE html>
 <html>...</html>
 \`\`\`
-Done.
 
 ITERATION:
 User says "make it X" \u2192 output FULL updated HTML. No explanations.
@@ -874,34 +873,35 @@ ${html}
 \`\`\`
 [Do] ${input}`;
   }
-  const apiMsgs = messages.map((m, i) => ({
-    role: m.role,
-    content: i === messages.length - 1 ? prompt : m.content
-  }));
+  const apiMsgs = [
+    { role: "system", content: SYSTEM },
+    ...messages.map((m, i) => ({
+      role: m.role,
+      content: i === messages.length - 1 ? prompt : m.content
+    }))
+  ];
   let reply = "";
   let retries = config.retries;
   while (retries >= 0) {
     try {
-      const stream = await anthropic2.messages.stream({
+      const stream = await groq.chat.completions.create({
         model: config.model,
-        max_tokens: 16e3,
-        system: SYSTEM,
-        messages: apiMsgs
+        max_tokens: 8e3,
+        messages: apiMsgs,
+        stream: true
       });
       process.stdout.write("\n  ");
-      for await (const event of stream) {
-        if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
-          const text = event.delta.text;
-          reply += text;
-          if (!reply.includes("```html") || reply.includes("```\n")) {
-            const clean = text.replace(/```html[\s\S]*?```/g, "");
-            if (clean) process.stdout.write(clean);
-          }
+      for await (const chunk of stream) {
+        const text = chunk.choices[0]?.delta?.content || "";
+        reply += text;
+        if (!reply.includes("```html") || reply.includes("```\n")) {
+          const clean = text.replace(/```html[\s\S]*?```/g, "");
+          if (clean) process.stdout.write(g(clean));
         }
       }
-      const finalMsg = await stream.finalMessage();
-      tokens += (finalMsg.usage?.input_tokens || 0) + (finalMsg.usage?.output_tokens || 0);
-      memory.tokens += (finalMsg.usage?.input_tokens || 0) + (finalMsg.usage?.output_tokens || 0);
+      const estTokens = Math.ceil((prompt.length + reply.length) / 4);
+      tokens += estTokens;
+      memory.tokens += estTokens;
       break;
     } catch (err) {
       retries--;
@@ -919,7 +919,7 @@ ${html}
     memory.lastPrompts.unshift(input);
     memory.lastPrompts = memory.lastPrompts.slice(0, 10);
     saveMemory();
-    process.stdout.write(chalk5.green("\n  \u2713 Saved"));
+    process.stdout.write(gg("\n  \u2713 Saved"));
   }
   process.stdout.write("\n\n");
   return reply;
@@ -977,11 +977,11 @@ function serve(port = 3333) {
       res.end(content);
     } else {
       res.writeHead(200, { "Content-Type": "text/html" });
-      res.end('<html><body style="background:#09090b;color:#fff;font-family:system-ui;display:grid;place-items:center;height:100vh;margin:0"><h1>Waiting for design...</h1></body></html>');
+      res.end('<html><body style="background:#09090b;color:#00ff00;font-family:monospace;display:grid;place-items:center;height:100vh;margin:0"><h1>[ WAITING FOR DESIGN ]</h1></body></html>');
     }
   });
   server.listen(port, () => {
-    console.log(chalk5.green(`
+    console.log(gg(`
   Live: http://localhost:${port}
 `));
     open(`http://localhost:${port}`);
@@ -989,19 +989,19 @@ function serve(port = 3333) {
 }
 var CMDS = {
   help: () => console.log(`
-  ${chalk5.bold("Commands")}
-  /clear      Reset conversation
-  /history    Show designs
-  /restore N  Restore design N
-  /export     Save copy
-  /load FILE  Load HTML
-  /ls [DIR]   List files
-  /cat FILE   Read file
-  /bash CMD   Run command
-  /model      Show/set model
-  /stats      Show stats
-  /config     Show config
-  /set K V    Set config
+  ${gg("Commands")}
+  ${g("/clear")}      Reset conversation
+  ${g("/history")}    Show designs
+  ${g("/restore N")}  Restore design N
+  ${g("/export")}     Save copy
+  ${g("/load FILE")}  Load HTML
+  ${g("/ls [DIR]")}   List files
+  ${g("/cat FILE")}   Read file
+  ${g("/bash CMD")}   Run command
+  ${g("/model")}      Show/set model
+  ${g("/stats")}      Show stats
+  ${g("/config")}     Show config
+  ${g("/set K V")}    Set config
   `),
   clear: () => {
     messages = [];
@@ -1014,9 +1014,9 @@ var CMDS = {
       console.log(chalk5.yellow("\n  No history\n"));
       return;
     }
-    console.log(chalk5.cyan("\n  History:"));
+    console.log(g("\n  History:"));
     designs.slice(-10).forEach((d, i) => {
-      console.log(chalk5.gray(`  ${i + 1}. ${d.prompt.slice(0, 50)}${d.prompt.length > 50 ? "..." : ""}`));
+      console.log(gd(`  ${i + 1}. ${d.prompt.slice(0, 50)}${d.prompt.length > 50 ? "..." : ""}`));
     });
     console.log();
   },
@@ -1030,7 +1030,7 @@ var CMDS = {
     }
     html = designs[n - 1].html;
     save(html);
-    console.log(chalk5.green(`
+    console.log(gg(`
   Restored #${n}
 `));
     open();
@@ -1042,7 +1042,7 @@ var CMDS = {
     }
     const name = a || `design-${Date.now()}.html`;
     fs.writeFileSync(name, html);
-    console.log(chalk5.green(`
+    console.log(gg(`
   Exported: ${name}
 `));
   },
@@ -1055,7 +1055,7 @@ var CMDS = {
     if (content) {
       html = content;
       save(html);
-      console.log(chalk5.green(`
+      console.log(gg(`
   Loaded
 `));
       open();
@@ -1068,7 +1068,7 @@ var CMDS = {
     if (!files.length) console.log(chalk5.yellow("\n  Empty\n"));
     else {
       console.log();
-      files.forEach((f) => console.log(`  ${f}`));
+      files.forEach((f) => console.log(g(`  ${f}`)));
       console.log();
     }
   },
@@ -1078,7 +1078,7 @@ var CMDS = {
       return;
     }
     const content = read(a);
-    if (content) console.log("\n" + content + "\n");
+    if (content) console.log("\n" + g(content) + "\n");
     else console.log(chalk5.red(`
   Can't read
 `));
@@ -1088,29 +1088,29 @@ var CMDS = {
       console.log(chalk5.yellow("\n  /bash cmd\n"));
       return;
     }
-    console.log("\n" + bash(a) + "\n");
+    console.log("\n" + g(bash(a)) + "\n");
   },
   model: (a) => {
     if (a) {
       config.model = a;
-      console.log(chalk5.green(`
+      console.log(gg(`
   Model: ${a}
 `));
-    } else console.log(chalk5.cyan(`
+    } else console.log(g(`
   Model: ${config.model}
 `));
   },
   stats: () => {
-    console.log(chalk5.cyan(`
+    console.log(g(`
   Session:  ${tokens.toLocaleString()} tokens
   Total:    ${memory.tokens.toLocaleString()} tokens
   Designs:  ${memory.designs}
-  Cost:     ~$${((tokens * 3e-3 + tokens * 0.015) / 1e3).toFixed(4)}
+  Cost:     ${gg("FREE")} (Groq)
 `));
   },
   config: () => {
-    console.log(chalk5.cyan("\n  Config:"));
-    Object.entries(config).forEach(([k, v]) => console.log(`  ${k}: ${v}`));
+    console.log(g("\n  Config:"));
+    Object.entries(config).forEach(([k, v]) => console.log(g(`  ${k}: ${v}`)));
     console.log();
   },
   set: (a) => {
@@ -1118,7 +1118,7 @@ var CMDS = {
     const v = rest.join(" ");
     if (k in config) {
       config[k] = v === "true" ? true : v === "false" ? false : isNaN(Number(v)) ? v : Number(v);
-      console.log(chalk5.green(`
+      console.log(gg(`
   ${k} = ${config[k]}
 `));
     } else console.log(chalk5.yellow(`
@@ -1126,26 +1126,39 @@ var CMDS = {
 `));
   },
   doctor: () => {
-    console.log(chalk5.cyan("\n  Check:"));
-    console.log(`  ${process.env.ANTHROPIC_API_KEY ? chalk5.green("\u2713") : chalk5.red("\u2717")} API key`);
-    console.log(`  ${chalk5.green("\u2713")} Node ${process.version}`);
-    console.log(`  ${chalk5.green("\u2713")} Platform ${process.platform}`);
+    console.log(g("\n  Check:"));
+    console.log(`  ${process.env.GROQ_API_KEY ? gg("\u2713") : chalk5.red("\u2717")} GROQ_API_KEY`);
+    console.log(`  ${gg("\u2713")} Node ${process.version}`);
+    console.log(`  ${gg("\u2713")} Platform ${process.platform}`);
+    console.log(`  ${gg("\u2713")} Model: ${config.model}`);
     console.log();
   },
-  version: () => console.log(chalk5.cyan(`
+  version: () => console.log(g(`
   browsr v${VERSION}
 `))
 };
 function banner() {
-  console.log(`
-  ${chalk5.bold.cyan("browsr")} ${chalk5.gray(`v${VERSION}`)}
-  ${chalk5.gray("AI Design Studio \u2022 Type anything \u2022 /help for commands")}
-`);
+  console.log(g(`
+  \u2588\u2588\u2588\u2588\u2588\u2588\u2557 \u2588\u2588\u2588\u2588\u2588\u2588\u2557  \u2588\u2588\u2588\u2588\u2588\u2588\u2557 \u2588\u2588\u2557    \u2588\u2588\u2557\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2557\u2588\u2588\u2588\u2588\u2588\u2588\u2557
+  \u2588\u2588\u2554\u2550\u2550\u2588\u2588\u2557\u2588\u2588\u2554\u2550\u2550\u2588\u2588\u2557\u2588\u2588\u2554\u2550\u2550\u2550\u2588\u2588\u2557\u2588\u2588\u2551    \u2588\u2588\u2551\u2588\u2588\u2554\u2550\u2550\u2550\u2550\u255D\u2588\u2588\u2554\u2550\u2550\u2588\u2588\u2557
+  \u2588\u2588\u2588\u2588\u2588\u2588\u2554\u255D\u2588\u2588\u2588\u2588\u2588\u2588\u2554\u255D\u2588\u2588\u2551   \u2588\u2588\u2551\u2588\u2588\u2551 \u2588\u2557 \u2588\u2588\u2551\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2557\u2588\u2588\u2588\u2588\u2588\u2588\u2554\u255D
+  \u2588\u2588\u2554\u2550\u2550\u2588\u2588\u2557\u2588\u2588\u2554\u2550\u2550\u2588\u2588\u2557\u2588\u2588\u2551   \u2588\u2588\u2551\u2588\u2588\u2551\u2588\u2588\u2588\u2557\u2588\u2588\u2551\u255A\u2550\u2550\u2550\u2550\u2588\u2588\u2551\u2588\u2588\u2554\u2550\u2550\u2588\u2588\u2557
+  \u2588\u2588\u2588\u2588\u2588\u2588\u2554\u255D\u2588\u2588\u2551  \u2588\u2588\u2551\u255A\u2588\u2588\u2588\u2588\u2588\u2588\u2554\u255D\u255A\u2588\u2588\u2588\u2554\u2588\u2588\u2588\u2554\u255D\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2551\u2588\u2588\u2551  \u2588\u2588\u2551
+  \u255A\u2550\u2550\u2550\u2550\u2550\u255D \u255A\u2550\u255D  \u255A\u2550\u255D \u255A\u2550\u2550\u2550\u2550\u2550\u255D  \u255A\u2550\u2550\u255D\u255A\u2550\u2550\u255D \u255A\u2550\u2550\u2550\u2550\u2550\u2550\u255D\u255A\u2550\u255D  \u255A\u2550\u255D
+  `));
+  console.log(gd(`  v${VERSION} \u2022 Powered by Groq (FREE) \u2022 /help for commands
+`));
 }
 async function startChat() {
   loadMemory();
   console.clear();
   banner();
+  if (!process.env.GROQ_API_KEY) {
+    console.log(chalk5.yellow(`  No GROQ_API_KEY found.`));
+    console.log(g(`  Get free key: https://console.groq.com`));
+    console.log(g(`  Then: export GROQ_API_KEY=your-key
+`));
+  }
   const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
   rl.on("close", () => {
     if (server) server.close();
@@ -1153,7 +1166,7 @@ async function startChat() {
     process.exit(0);
   });
   const prompt = () => {
-    rl.question(chalk5.cyan("\u203A "), async (input) => {
+    rl.question(gg("\u203A "), async (input) => {
       const cmd = input.trim();
       if (!cmd) {
         prompt();
@@ -1177,7 +1190,7 @@ async function startChat() {
       if (/^(open|o|show|preview|p)$/.test(lower)) {
         if (html) {
           open();
-          console.log(chalk5.green("\n  Opened\n"));
+          console.log(gg("\n  Opened\n"));
         } else console.log(chalk5.yellow("\n  Nothing yet\n"));
         prompt();
         return;
@@ -1208,9 +1221,9 @@ async function startChat() {
       } catch (err) {
         const msg = err.message || "";
         if (msg.includes("API") || msg.includes("401") || msg.includes("key")) {
-          console.log(chalk5.red("\n  API key issue. Run /doctor\n"));
+          console.log(chalk5.red("\n  API key issue. Get free key at https://console.groq.com\n"));
         } else if (msg.includes("429") || msg.includes("rate")) {
-          console.log(chalk5.yellow("\n  Rate limited. Retry in a sec.\n"));
+          console.log(chalk5.yellow("\n  Rate limited. Wait a sec.\n"));
         } else {
           console.log(chalk5.red(`
   Error: ${msg}

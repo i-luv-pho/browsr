@@ -3,169 +3,112 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>browsr - AI Design in Your Terminal</title>
+    <title>browsr - FREE AI Design Generator</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             min-height: 100vh;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #fafafa;
+            font-family: 'SF Mono', 'Monaco', 'Inconsolata', monospace;
+            background: #0a0a0a;
+            color: #00ff00;
             padding: 20px;
         }
-
         .logo {
-            font-family: 'SF Mono', 'Monaco', 'Inconsolata', monospace;
-            font-size: 14px;
-            line-height: 1.2;
-            color: #0ea5e9;
+            font-size: 12px;
+            line-height: 1.1;
             white-space: pre;
-            margin-bottom: 40px;
-            text-align: center;
+            margin-bottom: 24px;
+            text-shadow: 0 0 10px #00ff0050;
         }
-
         h1 {
             font-size: 48px;
             font-weight: 700;
-            color: #0f172a;
-            margin-bottom: 16px;
-            letter-spacing: -1px;
+            margin-bottom: 8px;
+            text-shadow: 0 0 20px #00ff0040;
         }
-
         .tagline {
-            font-size: 20px;
-            color: #64748b;
-            margin-bottom: 48px;
-            text-align: center;
+            font-size: 16px;
+            color: #00ff00aa;
+            margin-bottom: 40px;
         }
-
+        .free-badge {
+            background: #00ff00;
+            color: #000;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-bottom: 32px;
+        }
         .install-box {
-            background: #0f172a;
-            border-radius: 16px;
-            padding: 24px 32px;
+            background: #111;
+            border: 1px solid #00ff0040;
+            border-radius: 8px;
+            padding: 20px 28px;
             margin-bottom: 16px;
             display: flex;
             align-items: center;
             gap: 16px;
-            box-shadow: 0 4px 24px rgba(15, 23, 42, 0.2);
+            box-shadow: 0 0 30px #00ff0015;
         }
-
         .install-command {
-            font-family: 'SF Mono', 'Monaco', 'Inconsolata', monospace;
-            font-size: 15px;
-            color: #e2e8f0;
-            white-space: nowrap;
-        }
-
-        .install-command .curl {
-            color: #22d3ee;
-        }
-
-        .install-command .url {
-            color: #a78bfa;
-        }
-
-        .install-command .pipe {
-            color: #64748b;
-        }
-
-        .install-command .bash {
-            color: #4ade80;
-        }
-
-        .copy-btn {
-            background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
-            border: none;
-            color: white;
-            padding: 12px 24px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 15px;
-            font-weight: 600;
-            transition: all 0.2s;
-            white-space: nowrap;
-        }
-
-        .copy-btn:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(14, 165, 233, 0.4);
-        }
-
-        .copy-btn.copied {
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-        }
-
-        .instructions {
             font-size: 14px;
-            color: #94a3b8;
+            color: #00ff00;
+        }
+        .copy-btn {
+            background: #00ff00;
+            border: none;
+            color: #000;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            font-family: inherit;
+            transition: all 0.2s;
+        }
+        .copy-btn:hover {
+            box-shadow: 0 0 20px #00ff0060;
+            transform: scale(1.02);
+        }
+        .copy-btn.copied { background: #00cc00; }
+        .instructions {
+            font-size: 13px;
+            color: #00ff0080;
             margin-bottom: 32px;
         }
-
-        .github-link {
-            color: #64748b;
+        .link {
+            color: #00ff00;
             text-decoration: none;
-            font-size: 14px;
-            transition: color 0.2s;
+            font-size: 13px;
+            border-bottom: 1px solid #00ff0040;
+            transition: all 0.2s;
         }
-
-        .github-link:hover {
-            color: #0ea5e9;
-        }
-
+        .link:hover { border-color: #00ff00; }
         .features {
             display: flex;
-            gap: 48px;
-            margin-top: 64px;
+            gap: 40px;
+            margin-top: 48px;
             flex-wrap: wrap;
             justify-content: center;
         }
-
         .feature {
             text-align: center;
-            max-width: 200px;
+            max-width: 150px;
         }
-
-        .feature-icon {
-            font-size: 32px;
-            margin-bottom: 12px;
-        }
-
-        .feature-title {
-            font-weight: 600;
-            color: #0f172a;
-            margin-bottom: 4px;
-        }
-
-        .feature-desc {
-            font-size: 14px;
-            color: #64748b;
-        }
-
+        .feature-icon { font-size: 28px; margin-bottom: 8px; }
+        .feature-title { font-weight: 600; margin-bottom: 4px; font-size: 14px; }
+        .feature-desc { font-size: 12px; color: #00ff0080; }
         @media (max-width: 600px) {
-            h1 {
-                font-size: 32px;
-            }
-            .logo {
-                font-size: 8px;
-            }
-            .install-box {
-                flex-direction: column;
-                padding: 20px;
-            }
-            .install-command {
-                font-size: 11px;
-            }
-            .copy-btn {
-                width: 100%;
-            }
+            h1 { font-size: 32px; }
+            .logo { font-size: 8px; }
+            .install-box { flex-direction: column; padding: 16px; }
+            .install-command { font-size: 11px; }
+            .copy-btn { width: 100%; }
         }
     </style>
 </head>
@@ -180,48 +123,43 @@
     </div>
 
     <h1>browsr</h1>
-    <p class="tagline">AI design generation in your terminal. Like Canva, but code.</p>
+    <p class="tagline">AI design generator. Like Canva, but code.</p>
+    <div class="free-badge">100% FREE - Powered by Groq</div>
 
     <div class="install-box">
-        <code class="install-command">
-            <span class="curl">curl</span> <span class="url">-fsSL https://raw.githubusercontent.com/i-luv-pho/browsr/main/install.sh</span> <span class="pipe">|</span> <span class="bash">bash</span>
-        </code>
+        <code class="install-command">curl -fsSL https://raw.githubusercontent.com/i-luv-pho/browsr/main/install.sh | bash</code>
         <button class="copy-btn" onclick="copyCommand()">Copy</button>
     </div>
 
-    <p class="instructions">Paste in Terminal. Installs everything automatically.</p>
+    <p class="instructions">Paste in Terminal. Installs everything.</p>
 
-    <a href="https://github.com/i-luv-pho/browsr" class="github-link">View on GitHub</a>
+    <a href="https://github.com/i-luv-pho/browsr" class="link">GitHub</a>
 
     <div class="features">
         <div class="feature">
-            <div class="feature-icon">&#9889;</div>
-            <div class="feature-title">Instant</div>
-            <div class="feature-desc">One command installs everything</div>
+            <div class="feature-icon">$0</div>
+            <div class="feature-title">Free Forever</div>
+            <div class="feature-desc">Groq API free tier</div>
         </div>
         <div class="feature">
-            <div class="feature-icon">&#128187;</div>
-            <div class="feature-title">Terminal Native</div>
-            <div class="feature-desc">Works where you work</div>
-        </div>
-        <div class="feature">
-            <div class="feature-icon">&#128640;</div>
+            <div class="feature-icon">&lt;/&gt;</div>
             <div class="feature-title">Real Code</div>
-            <div class="feature-desc">Outputs HTML/CSS/JS you own</div>
+            <div class="feature-desc">HTML/CSS you own</div>
+        </div>
+        <div class="feature">
+            <div class="feature-icon">⚡</div>
+            <div class="feature-title">Instant</div>
+            <div class="feature-desc">Groq is blazing fast</div>
         </div>
     </div>
 
     <script>
         function copyCommand() {
-            const cmd = 'curl -fsSL https://raw.githubusercontent.com/i-luv-pho/browsr/main/install.sh | bash';
-            navigator.clipboard.writeText(cmd);
+            navigator.clipboard.writeText('curl -fsSL https://raw.githubusercontent.com/i-luv-pho/browsr/main/install.sh | bash');
             const btn = document.querySelector('.copy-btn');
             btn.textContent = 'Copied!';
             btn.classList.add('copied');
-            setTimeout(() => {
-                btn.textContent = 'Copy';
-                btn.classList.remove('copied');
-            }, 2000);
+            setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000);
         }
     </script>
 </body>

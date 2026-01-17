@@ -1,6 +1,6 @@
 /**
- * browsr v2.0 - The Ultimate AI Design Studio
- * Fixes ALL Claude Code complaints. Speed > Safety.
+ * browsr v2.1 - The Ultimate AI Design Studio
+ * Now with Groq (FREE API) + Hacker Green Theme
  */
 
 import * as readline from 'readline';
@@ -10,10 +10,15 @@ import * as path from 'path';
 import { execSync } from 'child_process';
 import * as http from 'http';
 import * as os from 'os';
-import Anthropic from '@anthropic-ai/sdk';
+import Groq from 'groq-sdk';
 
-const anthropic = new Anthropic();
-const VERSION = '2.0.0';
+const groq = new Groq();
+const VERSION = '2.1.0';
+
+// Hacker green theme
+const g = chalk.green;
+const gg = chalk.greenBright;
+const gd = chalk.gray;
 
 // ═══════════════════════════════════════════════════════════════
 // TYPES
@@ -34,13 +39,13 @@ let server: http.Server | null = null;
 
 // Config - speed focused defaults
 const config = {
-  model: 'claude-sonnet-4-20250514',
-  maxHistory: 10,        // Keep conversation short for speed
+  model: 'llama-3.3-70b-versatile',  // Groq's best model
+  maxHistory: 10,
   outputDir: './output',
   autoOpen: true,
-  stream: true,          // Stream responses for perceived speed
-  retries: 2,            // Fast retry on failure
-  timeout: 60000,        // 60s timeout
+  stream: true,
+  retries: 2,
+  timeout: 60000,
 };
 
 // Paths
@@ -60,18 +65,17 @@ RULES:
 4. NO LIES - Only report what you actually did
 
 DESIGN SPEC:
-- Dark: #09090b bg, #fafafa text
+- Dark: #09090b bg, #fafafa text, #00ff00 accents (hacker green)
 - Font: Inter (Google Fonts)
 - Modern: gradients, glass, shadows
 - Responsive: mobile-first
 - Animations: subtle, 150ms
 
-OUTPUT:
+OUTPUT FORMAT - ALWAYS use this exact format:
 \`\`\`html
 <!DOCTYPE html>
 <html>...</html>
 \`\`\`
-Done.
 
 ITERATION:
 User says "make it X" → output FULL updated HTML. No explanations.
@@ -107,11 +111,11 @@ function saveMemory() {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// STREAMING CHAT - Fast perceived response
+// STREAMING CHAT - Fast perceived response (Groq is FAST)
 // ═══════════════════════════════════════════════════════════════
 
 async function streamChat(input: string): Promise<string> {
-  // Trim history for speed (FIX: context bloat)
+  // Trim history for speed
   if (messages.length > config.maxHistory * 2) {
     messages = messages.slice(-config.maxHistory * 2);
   }
@@ -124,49 +128,49 @@ async function streamChat(input: string): Promise<string> {
     prompt = `[Current]\n\`\`\`html\n${html}\n\`\`\`\n[Do] ${input}`;
   }
 
-  const apiMsgs = messages.map((m, i) => ({
-    role: m.role as 'user' | 'assistant',
-    content: i === messages.length - 1 ? prompt : m.content,
-  }));
+  const apiMsgs = [
+    { role: 'system' as const, content: SYSTEM },
+    ...messages.map((m, i) => ({
+      role: m.role as 'user' | 'assistant',
+      content: i === messages.length - 1 ? prompt : m.content,
+    }))
+  ];
 
   let reply = '';
   let retries = config.retries;
 
   while (retries >= 0) {
     try {
-      // Stream for speed
-      const stream = await anthropic.messages.stream({
+      // Stream for speed - Groq is blazing fast
+      const stream = await groq.chat.completions.create({
         model: config.model,
-        max_tokens: 16000,
-        system: SYSTEM,
+        max_tokens: 8000,
         messages: apiMsgs,
+        stream: true,
       });
 
       process.stdout.write('\n  ');
 
-      for await (const event of stream) {
-        if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
-          const text = event.delta.text;
-          reply += text;
+      for await (const chunk of stream) {
+        const text = chunk.choices[0]?.delta?.content || '';
+        reply += text;
 
-          // Don't print HTML to terminal (too verbose)
-          if (!reply.includes('```html') || reply.includes('```\n')) {
-            // Only print non-HTML parts
-            const clean = text.replace(/```html[\s\S]*?```/g, '');
-            if (clean) process.stdout.write(clean);
-          }
+        // Don't print HTML to terminal (too verbose)
+        if (!reply.includes('```html') || reply.includes('```\n')) {
+          const clean = text.replace(/```html[\s\S]*?```/g, '');
+          if (clean) process.stdout.write(g(clean));
         }
       }
 
-      const finalMsg = await stream.finalMessage();
-      tokens += (finalMsg.usage?.input_tokens || 0) + (finalMsg.usage?.output_tokens || 0);
-      memory.tokens += (finalMsg.usage?.input_tokens || 0) + (finalMsg.usage?.output_tokens || 0);
+      // Estimate tokens (Groq doesn't always return usage in streaming)
+      const estTokens = Math.ceil((prompt.length + reply.length) / 4);
+      tokens += estTokens;
+      memory.tokens += estTokens;
 
       break; // Success
     } catch (err: any) {
       retries--;
       if (retries < 0) throw err;
-      // Quick retry
       await new Promise(r => setTimeout(r, 500));
     }
   }
@@ -183,35 +187,10 @@ async function streamChat(input: string): Promise<string> {
     memory.lastPrompts.unshift(input);
     memory.lastPrompts = memory.lastPrompts.slice(0, 10);
     saveMemory();
-    process.stdout.write(chalk.green('\n  ✓ Saved'));
+    process.stdout.write(gg('\n  ✓ Saved'));
   }
 
   process.stdout.write('\n\n');
-  return reply;
-}
-
-// Non-streaming fallback (faster for short responses)
-async function quickChat(input: string): Promise<string> {
-  messages.push({ role: 'user', content: input });
-
-  const apiMsgs = messages.map(m => ({
-    role: m.role as 'user' | 'assistant',
-    content: m.content,
-  }));
-
-  const response = await anthropic.messages.create({
-    model: config.model,
-    max_tokens: 4000,
-    system: SYSTEM,
-    messages: apiMsgs,
-  });
-
-  tokens += (response.usage?.input_tokens || 0) + (response.usage?.output_tokens || 0);
-
-  const block = response.content.find(b => b.type === 'text');
-  const reply = block?.type === 'text' ? block.text : '';
-  messages.push({ role: 'assistant', content: reply });
-
   return reply;
 }
 
@@ -266,19 +245,18 @@ function serve(port = 3333) {
 
     if (fs.existsSync(file)) {
       let content = fs.readFileSync(file, 'utf8');
-      // Inject auto-reload
       const script = `<script>setInterval(()=>fetch('/__poll').then(r=>r.text()).then(t=>t==='reload'&&location.reload()),500)</script>`;
       content = content.replace('</body>', script + '</body>');
       res.writeHead(200, { 'Content-Type': 'text/html' });
       res.end(content);
     } else {
       res.writeHead(200, { 'Content-Type': 'text/html' });
-      res.end('<html><body style="background:#09090b;color:#fff;font-family:system-ui;display:grid;place-items:center;height:100vh;margin:0"><h1>Waiting for design...</h1></body></html>');
+      res.end('<html><body style="background:#09090b;color:#00ff00;font-family:monospace;display:grid;place-items:center;height:100vh;margin:0"><h1>[ WAITING FOR DESIGN ]</h1></body></html>');
     }
   });
 
   server.listen(port, () => {
-    console.log(chalk.green(`\n  Live: http://localhost:${port}\n`));
+    console.log(gg(`\n  Live: http://localhost:${port}\n`));
     open(`http://localhost:${port}`);
   });
 }
@@ -289,28 +267,28 @@ function serve(port = 3333) {
 
 const CMDS: Record<string, (a: string) => void> = {
   help: () => console.log(`
-  ${chalk.bold('Commands')}
-  /clear      Reset conversation
-  /history    Show designs
-  /restore N  Restore design N
-  /export     Save copy
-  /load FILE  Load HTML
-  /ls [DIR]   List files
-  /cat FILE   Read file
-  /bash CMD   Run command
-  /model      Show/set model
-  /stats      Show stats
-  /config     Show config
-  /set K V    Set config
+  ${gg('Commands')}
+  ${g('/clear')}      Reset conversation
+  ${g('/history')}    Show designs
+  ${g('/restore N')}  Restore design N
+  ${g('/export')}     Save copy
+  ${g('/load FILE')}  Load HTML
+  ${g('/ls [DIR]')}   List files
+  ${g('/cat FILE')}   Read file
+  ${g('/bash CMD')}   Run command
+  ${g('/model')}      Show/set model
+  ${g('/stats')}      Show stats
+  ${g('/config')}     Show config
+  ${g('/set K V')}    Set config
   `),
 
   clear: () => { messages = []; html = null; console.clear(); banner(); },
 
   history: () => {
     if (!designs.length) { console.log(chalk.yellow('\n  No history\n')); return; }
-    console.log(chalk.cyan('\n  History:'));
+    console.log(g('\n  History:'));
     designs.slice(-10).forEach((d, i) => {
-      console.log(chalk.gray(`  ${i + 1}. ${d.prompt.slice(0, 50)}${d.prompt.length > 50 ? '...' : ''}`));
+      console.log(gd(`  ${i + 1}. ${d.prompt.slice(0, 50)}${d.prompt.length > 50 ? '...' : ''}`));
     });
     console.log();
   },
@@ -320,7 +298,7 @@ const CMDS: Record<string, (a: string) => void> = {
     if (!n || n < 1 || n > designs.length) { console.log(chalk.yellow(`\n  Use 1-${designs.length}\n`)); return; }
     html = designs[n - 1].html;
     save(html);
-    console.log(chalk.green(`\n  Restored #${n}\n`));
+    console.log(gg(`\n  Restored #${n}\n`));
     open();
   },
 
@@ -328,51 +306,51 @@ const CMDS: Record<string, (a: string) => void> = {
     if (!html) { console.log(chalk.yellow('\n  Nothing to export\n')); return; }
     const name = a || `design-${Date.now()}.html`;
     fs.writeFileSync(name, html);
-    console.log(chalk.green(`\n  Exported: ${name}\n`));
+    console.log(gg(`\n  Exported: ${name}\n`));
   },
 
   load: (a) => {
     if (!a) { console.log(chalk.yellow('\n  /load file.html\n')); return; }
     const content = read(a);
-    if (content) { html = content; save(html); console.log(chalk.green(`\n  Loaded\n`)); open(); }
+    if (content) { html = content; save(html); console.log(gg(`\n  Loaded\n`)); open(); }
     else console.log(chalk.red(`\n  Can't read ${a}\n`));
   },
 
   ls: (a) => {
     const files = ls(a || '.');
     if (!files.length) console.log(chalk.yellow('\n  Empty\n'));
-    else { console.log(); files.forEach(f => console.log(`  ${f}`)); console.log(); }
+    else { console.log(); files.forEach(f => console.log(g(`  ${f}`))); console.log(); }
   },
 
   cat: (a) => {
     if (!a) { console.log(chalk.yellow('\n  /cat file\n')); return; }
     const content = read(a);
-    if (content) console.log('\n' + content + '\n');
+    if (content) console.log('\n' + g(content) + '\n');
     else console.log(chalk.red(`\n  Can't read\n`));
   },
 
   bash: (a) => {
     if (!a) { console.log(chalk.yellow('\n  /bash cmd\n')); return; }
-    console.log('\n' + bash(a) + '\n');
+    console.log('\n' + g(bash(a)) + '\n');
   },
 
   model: (a) => {
-    if (a) { config.model = a; console.log(chalk.green(`\n  Model: ${a}\n`)); }
-    else console.log(chalk.cyan(`\n  Model: ${config.model}\n`));
+    if (a) { config.model = a; console.log(gg(`\n  Model: ${a}\n`)); }
+    else console.log(g(`\n  Model: ${config.model}\n`));
   },
 
   stats: () => {
-    console.log(chalk.cyan(`
+    console.log(g(`
   Session:  ${tokens.toLocaleString()} tokens
   Total:    ${memory.tokens.toLocaleString()} tokens
   Designs:  ${memory.designs}
-  Cost:     ~$${((tokens * 0.003 + tokens * 0.015) / 1000).toFixed(4)}
+  Cost:     ${gg('FREE')} (Groq)
 `));
   },
 
   config: () => {
-    console.log(chalk.cyan('\n  Config:'));
-    Object.entries(config).forEach(([k, v]) => console.log(`  ${k}: ${v}`));
+    console.log(g('\n  Config:'));
+    Object.entries(config).forEach(([k, v]) => console.log(g(`  ${k}: ${v}`)));
     console.log();
   },
 
@@ -381,30 +359,36 @@ const CMDS: Record<string, (a: string) => void> = {
     const v = rest.join(' ');
     if (k in config) {
       (config as any)[k] = v === 'true' ? true : v === 'false' ? false : isNaN(Number(v)) ? v : Number(v);
-      console.log(chalk.green(`\n  ${k} = ${(config as any)[k]}\n`));
+      console.log(gg(`\n  ${k} = ${(config as any)[k]}\n`));
     } else console.log(chalk.yellow(`\n  Unknown: ${k}\n`));
   },
 
   doctor: () => {
-    console.log(chalk.cyan('\n  Check:'));
-    console.log(`  ${process.env.ANTHROPIC_API_KEY ? chalk.green('✓') : chalk.red('✗')} API key`);
-    console.log(`  ${chalk.green('✓')} Node ${process.version}`);
-    console.log(`  ${chalk.green('✓')} Platform ${process.platform}`);
+    console.log(g('\n  Check:'));
+    console.log(`  ${process.env.GROQ_API_KEY ? gg('✓') : chalk.red('✗')} GROQ_API_KEY`);
+    console.log(`  ${gg('✓')} Node ${process.version}`);
+    console.log(`  ${gg('✓')} Platform ${process.platform}`);
+    console.log(`  ${gg('✓')} Model: ${config.model}`);
     console.log();
   },
 
-  version: () => console.log(chalk.cyan(`\n  browsr v${VERSION}\n`)),
+  version: () => console.log(g(`\n  browsr v${VERSION}\n`)),
 };
 
 // ═══════════════════════════════════════════════════════════════
-// UI - Minimal, fast
+// UI - Minimal, fast, HACKER GREEN
 // ═══════════════════════════════════════════════════════════════
 
 function banner() {
-  console.log(`
-  ${chalk.bold.cyan('browsr')} ${chalk.gray(`v${VERSION}`)}
-  ${chalk.gray('AI Design Studio • Type anything • /help for commands')}
-`);
+  console.log(g(`
+  ██████╗ ██████╗  ██████╗ ██╗    ██╗███████╗██████╗
+  ██╔══██╗██╔══██╗██╔═══██╗██║    ██║██╔════╝██╔══██╗
+  ██████╔╝██████╔╝██║   ██║██║ █╗ ██║███████╗██████╔╝
+  ██╔══██╗██╔══██╗██║   ██║██║███╗██║╚════██║██╔══██╗
+  ██████╔╝██║  ██║╚██████╔╝╚███╔███╔╝███████║██║  ██║
+  ╚═════╝ ╚═╝  ╚═╝ ╚═════╝  ╚══╝╚══╝ ╚══════╝╚═╝  ╚═╝
+  `));
+  console.log(gd(`  v${VERSION} • Powered by Groq (FREE) • /help for commands\n`));
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -416,6 +400,13 @@ export async function startChat(): Promise<void> {
   console.clear();
   banner();
 
+  // Check for API key
+  if (!process.env.GROQ_API_KEY) {
+    console.log(chalk.yellow(`  No GROQ_API_KEY found.`));
+    console.log(g(`  Get free key: https://console.groq.com`));
+    console.log(g(`  Then: export GROQ_API_KEY=your-key\n`));
+  }
+
   const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
 
   rl.on('close', () => {
@@ -425,7 +416,7 @@ export async function startChat(): Promise<void> {
   });
 
   const prompt = () => {
-    rl.question(chalk.cyan('› '), async (input) => {
+    rl.question(gg('› '), async (input) => {
       const cmd = input.trim();
       if (!cmd) { prompt(); return; }
 
@@ -442,22 +433,22 @@ export async function startChat(): Promise<void> {
       // Quick commands
       const lower = cmd.toLowerCase();
       if (/^(q|quit|exit|bye)$/.test(lower)) { rl.close(); return; }
-      if (/^(open|o|show|preview|p)$/.test(lower)) { if (html) { open(); console.log(chalk.green('\n  Opened\n')); } else console.log(chalk.yellow('\n  Nothing yet\n')); prompt(); return; }
+      if (/^(open|o|show|preview|p)$/.test(lower)) { if (html) { open(); console.log(gg('\n  Opened\n')); } else console.log(chalk.yellow('\n  Nothing yet\n')); prompt(); return; }
       if (/^(live|serve|server|watch)$/.test(lower)) { serve(); prompt(); return; }
       if (/^(clear|reset|new)$/.test(lower)) { CMDS.clear(''); prompt(); return; }
       if (/^(history|h)$/.test(lower)) { CMDS.history(''); prompt(); return; }
       if (/^(help|\?)$/.test(lower)) { CMDS.help(''); prompt(); return; }
 
-      // AI - Just do it, no spinner (streaming shows progress)
+      // AI - Just do it
       try {
         await streamChat(cmd);
         if (html) open();
       } catch (err: any) {
         const msg = err.message || '';
         if (msg.includes('API') || msg.includes('401') || msg.includes('key')) {
-          console.log(chalk.red('\n  API key issue. Run /doctor\n'));
+          console.log(chalk.red('\n  API key issue. Get free key at https://console.groq.com\n'));
         } else if (msg.includes('429') || msg.includes('rate')) {
-          console.log(chalk.yellow('\n  Rate limited. Retry in a sec.\n'));
+          console.log(chalk.yellow('\n  Rate limited. Wait a sec.\n'));
         } else {
           console.log(chalk.red(`\n  Error: ${msg}\n`));
         }
