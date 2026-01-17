@@ -796,10 +796,7 @@ import { execSync as execSync2 } from "child_process";
 import * as http from "http";
 import * as os from "os";
 import Groq from "groq-sdk";
-var K = ["gsk", "Yftj4DgGb0XAC0qqF44J", "WGdyb3FY6MB8sfMkztyd7GGhMec5luyo"].join("_");
-var groq = new Groq({
-  apiKey: process.env.GROQ_API_KEY || K
-});
+var groq = new Groq();
 var VERSION = "2.1.0";
 var g = chalk5.green;
 var gg = chalk5.greenBright;
@@ -1156,8 +1153,12 @@ async function startChat() {
   loadMemory();
   console.clear();
   banner();
-  console.log(gd(`  100% FREE \u2022 No API key needed \u2022 No limits
+  if (!process.env.GROQ_API_KEY) {
+    console.log(chalk5.yellow(`  No GROQ_API_KEY found.`));
+    console.log(g(`  Get FREE key: https://console.groq.com`));
+    console.log(g(`  Then: export GROQ_API_KEY=your-key
 `));
+  }
   const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
   rl.on("close", () => {
     if (server) server.close();
