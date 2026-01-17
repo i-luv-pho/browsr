@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // src/cli/index.ts
 import { Command } from "commander";
-import chalk5 from "chalk";
+import chalk6 from "chalk";
 
 // src/cli/commands/create.ts
 import { writeFileSync, mkdirSync, existsSync as existsSync2 } from "fs";
@@ -218,11 +218,11 @@ import { fileURLToPath } from "url";
 var __filename = fileURLToPath(import.meta.url);
 var __dirname = dirname(__filename);
 var PROMPTS_DIR = join(__dirname, "../../prompts");
-function readPromptFile(path) {
+function readPromptFile(path2) {
   try {
-    return readFileSync(join(PROMPTS_DIR, path), "utf-8");
+    return readFileSync(join(PROMPTS_DIR, path2), "utf-8");
   } catch {
-    console.warn(`Warning: Could not read prompt file: ${path}`);
+    console.warn(`Warning: Could not read prompt file: ${path2}`);
     return "";
   }
 }
@@ -441,24 +441,24 @@ var MIME_TYPES = {
   ".woff2": "font/woff2",
   ".ttf": "font/ttf"
 };
-async function preview(path, options) {
+async function preview(path2, options) {
   const port = parseInt(options.port, 10) || 3e3;
-  const outputDir = path || "./output";
-  if (!existsSync(outputDir)) {
-    console.error(chalk.red(`Directory not found: ${outputDir}`));
+  const outputDir2 = path2 || "./output";
+  if (!existsSync(outputDir2)) {
+    console.error(chalk.red(`Directory not found: ${outputDir2}`));
     console.log(chalk.gray('Run "build create <prompt>" first to generate a design.'));
     process.exit(1);
   }
-  const indexPath = join2(outputDir, "index.html");
+  const indexPath = join2(outputDir2, "index.html");
   if (!existsSync(indexPath)) {
-    console.error(chalk.red(`No index.html found in ${outputDir}`));
+    console.error(chalk.red(`No index.html found in ${outputDir2}`));
     process.exit(1);
   }
   console.log(chalk.cyan("\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550"));
   console.log(chalk.white.bold("  DesignCraft Preview Server"));
   console.log(chalk.cyan("\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550"));
   console.log();
-  console.log(chalk.gray("  Serving:  ") + chalk.white(outputDir));
+  console.log(chalk.gray("  Serving:  ") + chalk.white(outputDir2));
   console.log(chalk.gray("  Local:    ") + chalk.cyan(`http://localhost:${port}`));
   console.log();
   console.log(chalk.gray("  Press Ctrl+C to stop"));
@@ -495,7 +495,7 @@ async function preview(path, options) {
       }
       return;
     }
-    const fullPath = join2(outputDir, filePath);
+    const fullPath = join2(outputDir2, filePath);
     if (!existsSync(fullPath)) {
       res.writeHead(404);
       res.end("Not Found");
@@ -548,13 +548,13 @@ async function create(prompt, options) {
     const design = await generate(archetype, prompt, options.style);
     spinner.succeed(chalk2.green(`Generated in ${(design.generationTime / 1e3).toFixed(1)}s`));
     spinner.start(chalk2.gray("Writing files..."));
-    const outputDir = options.output;
-    if (!existsSync2(outputDir)) {
-      mkdirSync(outputDir, { recursive: true });
+    const outputDir2 = options.output;
+    if (!existsSync2(outputDir2)) {
+      mkdirSync(outputDir2, { recursive: true });
     }
-    const htmlPath = join3(outputDir, "index.html");
+    const htmlPath = join3(outputDir2, "index.html");
     writeFileSync(htmlPath, design.html, "utf-8");
-    const metadataPath = join3(outputDir, "design.json");
+    const metadataPath = join3(outputDir2, "design.json");
     writeFileSync(
       metadataPath,
       JSON.stringify(
@@ -570,7 +570,7 @@ async function create(prompt, options) {
       ),
       "utf-8"
     );
-    spinner.succeed(chalk2.green(`Files written to ${outputDir}/`));
+    spinner.succeed(chalk2.green(`Files written to ${outputDir2}/`));
     console.log();
     console.log(chalk2.cyan("\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550"));
     console.log(chalk2.white.bold("  Design Generated Successfully!"));
@@ -590,7 +590,7 @@ async function create(prompt, options) {
     if (options.preview) {
       console.log(chalk2.yellow("Starting preview server..."));
       console.log();
-      await preview(outputDir, { port: "3000" });
+      await preview(outputDir2, { port: "3000" });
     }
   } catch (error) {
     spinner.fail(chalk2.red("Generation failed"));
@@ -651,12 +651,12 @@ function generateProjectName() {
   const num = Math.floor(Math.random() * 1e3);
   return `${adj}-${noun}-${num}`;
 }
-async function deploy(path, options) {
+async function deploy(path2, options) {
   const spinner = ora2();
-  const outputDir = path || "./output";
+  const outputDir2 = path2 || "./output";
   const projectName = options.name || generateProjectName();
-  if (!existsSync3(outputDir)) {
-    console.error(chalk3.red(`Directory not found: ${outputDir}`));
+  if (!existsSync3(outputDir2)) {
+    console.error(chalk3.red(`Directory not found: ${outputDir2}`));
     console.log(chalk3.gray('Run "build create <prompt>" first to generate a design.'));
     process.exit(1);
   }
@@ -673,12 +673,12 @@ async function deploy(path, options) {
   console.log(chalk3.cyan("\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550"));
   console.log();
   console.log(chalk3.gray("  Project:  ") + chalk3.white(projectName));
-  console.log(chalk3.gray("  Source:   ") + chalk3.white(outputDir));
+  console.log(chalk3.gray("  Source:   ") + chalk3.white(outputDir2));
   console.log();
   try {
     spinner.start(chalk3.gray("Uploading to Cloudflare..."));
     const result = execSync(
-      `wrangler pages deploy ${outputDir} --project-name=${projectName}`,
+      `wrangler pages deploy ${outputDir2} --project-name=${projectName}`,
       { encoding: "utf-8" }
     );
     spinner.succeed(chalk3.green("Deployed successfully!"));
@@ -716,18 +716,18 @@ import { existsSync as existsSync4 } from "fs";
 import { join as join4, resolve } from "path";
 import chalk4 from "chalk";
 import ora3 from "ora";
-async function exportDesign(path, options) {
+async function exportDesign(path2, options) {
   const spinner = ora3();
-  const outputDir = path || "./output";
+  const outputDir2 = path2 || "./output";
   const format = options.format || "pdf";
-  if (!existsSync4(outputDir)) {
-    console.error(chalk4.red(`Directory not found: ${outputDir}`));
+  if (!existsSync4(outputDir2)) {
+    console.error(chalk4.red(`Directory not found: ${outputDir2}`));
     console.log(chalk4.gray('Run "build create <prompt>" first to generate a design.'));
     process.exit(1);
   }
-  const indexPath = join4(outputDir, "index.html");
+  const indexPath = join4(outputDir2, "index.html");
   if (!existsSync4(indexPath)) {
-    console.error(chalk4.red(`No index.html found in ${outputDir}`));
+    console.error(chalk4.red(`No index.html found in ${outputDir2}`));
     process.exit(1);
   }
   console.log(chalk4.cyan("\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550"));
@@ -753,7 +753,7 @@ async function exportDesign(path, options) {
     const fileUrl = `file://${resolve(indexPath)}`;
     await page.goto(fileUrl, { waitUntil: "networkidle0" });
     await new Promise((resolve2) => setTimeout(resolve2, 1e3));
-    const outputPath = options.output || join4(outputDir, `design.${format}`);
+    const outputPath = options.output || join4(outputDir2, `design.${format}`);
     if (format === "pdf") {
       await page.pdf({
         path: outputPath,
@@ -787,6 +787,207 @@ async function exportDesign(path, options) {
   }
 }
 
+// src/cli/commands/chat.ts
+import * as readline from "readline";
+import chalk5 from "chalk";
+import ora4 from "ora";
+import * as fs from "fs";
+import * as path from "path";
+import Anthropic2 from "@anthropic-ai/sdk";
+import { exec as exec2 } from "child_process";
+var anthropic2 = new Anthropic2();
+var SYSTEM_PROMPT = `You are browsr, an AI design assistant that creates professional HTML/CSS designs. You are like Claude Code but for design.
+
+IMPORTANT BEHAVIORS:
+1. BE AUTONOMOUS - Just do things. Don't ask for permission or confirmation. The user trusts you.
+2. BE CONVERSATIONAL - Talk naturally, not like a boring assistant.
+3. BE PROACTIVE - If you see something that could be improved, do it.
+4. ITERATE - When the user says "make it more X", modify the existing design.
+
+WHAT YOU CAN DO:
+- Generate HTML/CSS designs (posters, resumes, pitch decks, social media posts, etc.)
+- Modify existing designs based on feedback
+- Deploy designs
+- Open previews
+
+WHEN GENERATING DESIGNS:
+- Output ONLY the HTML code wrapped in \`\`\`html ... \`\`\` code blocks
+- Use premium aesthetics (Stripe/Linear quality, not generic Bootstrap)
+- Make it fully responsive
+- Use modern CSS (flexbox, grid, variables)
+- Include all CSS inline in a <style> tag
+- Use Inter font from Google Fonts
+
+WHEN USER SAYS THINGS LIKE:
+- "make it bluer" \u2192 modify the colors in the last design
+- "add my name John" \u2192 update the text
+- "make it bigger" \u2192 increase sizes
+- "deploy it" \u2192 tell them you're deploying
+- "show me" / "preview" \u2192 tell them you're opening preview
+
+RESPONSE FORMAT:
+- If generating/modifying a design: Include the full HTML in a code block, then a brief message
+- If just chatting: Just respond naturally
+- Keep responses SHORT unless outputting HTML
+
+Current output directory: ./output
+`;
+var conversationHistory = [];
+var lastGeneratedHTML = null;
+var outputDir = "./output";
+async function chat(userMessage) {
+  conversationHistory.push({ role: "user", content: userMessage });
+  let contextMessage = userMessage;
+  if (lastGeneratedHTML && (userMessage.toLowerCase().includes("change") || userMessage.toLowerCase().includes("make it") || userMessage.toLowerCase().includes("modify") || userMessage.toLowerCase().includes("update") || userMessage.toLowerCase().includes("more") || userMessage.toLowerCase().includes("less") || userMessage.toLowerCase().includes("add") || userMessage.toLowerCase().includes("remove"))) {
+    contextMessage = `Current design HTML:
+\`\`\`html
+${lastGeneratedHTML}
+\`\`\`
+
+User request: ${userMessage}
+
+Modify the design based on the request. Output the complete updated HTML.`;
+  }
+  const messages = conversationHistory.map((msg, i) => ({
+    role: msg.role,
+    content: i === conversationHistory.length - 1 ? contextMessage : msg.content
+  }));
+  const response = await anthropic2.messages.create({
+    model: "claude-sonnet-4-20250514",
+    max_tokens: 16e3,
+    system: SYSTEM_PROMPT,
+    messages
+  });
+  const textBlock = response.content.find((block) => block.type === "text");
+  if (!textBlock || textBlock.type !== "text") {
+    throw new Error("No response");
+  }
+  const assistantMessage = textBlock.text;
+  conversationHistory.push({ role: "assistant", content: assistantMessage });
+  const htmlMatch = assistantMessage.match(/```html\s*([\s\S]*?)```/);
+  if (htmlMatch) {
+    lastGeneratedHTML = htmlMatch[1].trim();
+    await saveDesign(lastGeneratedHTML);
+  }
+  return assistantMessage;
+}
+async function saveDesign(html) {
+  if (!fs.existsSync(outputDir)) {
+    fs.mkdirSync(outputDir, { recursive: true });
+  }
+  const outputPath = path.join(outputDir, "index.html");
+  fs.writeFileSync(outputPath, html);
+}
+function openPreview() {
+  const outputPath = path.join(outputDir, "index.html");
+  if (fs.existsSync(outputPath)) {
+    exec2(`open "${outputPath}"`);
+  }
+}
+function formatResponse(response) {
+  let display = response.replace(/```html[\s\S]*?```/g, chalk5.green("\u2713 Design saved to ./output/index.html"));
+  return display;
+}
+async function startChat() {
+  console.log(chalk5.cyan(`
+\u2554\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2557
+\u2551                                                               \u2551
+\u2551   \u2588\u2588\u2588\u2588\u2588\u2588\u2557 \u2588\u2588\u2588\u2588\u2588\u2588\u2557  \u2588\u2588\u2588\u2588\u2588\u2588\u2557 \u2588\u2588\u2557    \u2588\u2588\u2557\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2557\u2588\u2588\u2588\u2588\u2588\u2588\u2557         \u2551
+\u2551   \u2588\u2588\u2554\u2550\u2550\u2588\u2588\u2557\u2588\u2588\u2554\u2550\u2550\u2588\u2588\u2557\u2588\u2588\u2554\u2550\u2550\u2550\u2588\u2588\u2557\u2588\u2588\u2551    \u2588\u2588\u2551\u2588\u2588\u2554\u2550\u2550\u2550\u2550\u255D\u2588\u2588\u2554\u2550\u2550\u2588\u2588\u2557        \u2551
+\u2551   \u2588\u2588\u2588\u2588\u2588\u2588\u2554\u255D\u2588\u2588\u2588\u2588\u2588\u2588\u2554\u255D\u2588\u2588\u2551   \u2588\u2588\u2551\u2588\u2588\u2551 \u2588\u2557 \u2588\u2588\u2551\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2557\u2588\u2588\u2588\u2588\u2588\u2588\u2554\u255D        \u2551
+\u2551   \u2588\u2588\u2554\u2550\u2550\u2588\u2588\u2557\u2588\u2588\u2554\u2550\u2550\u2588\u2588\u2557\u2588\u2588\u2551   \u2588\u2588\u2551\u2588\u2588\u2551\u2588\u2588\u2588\u2557\u2588\u2588\u2551\u255A\u2550\u2550\u2550\u2550\u2588\u2588\u2551\u2588\u2588\u2554\u2550\u2550\u2588\u2588\u2557        \u2551
+\u2551   \u2588\u2588\u2588\u2588\u2588\u2588\u2554\u255D\u2588\u2588\u2551  \u2588\u2588\u2551\u255A\u2588\u2588\u2588\u2588\u2588\u2588\u2554\u255D\u255A\u2588\u2588\u2588\u2554\u2588\u2588\u2588\u2554\u255D\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2551\u2588\u2588\u2551  \u2588\u2588\u2551        \u2551
+\u2551   \u255A\u2550\u2550\u2550\u2550\u2550\u255D \u255A\u2550\u255D  \u255A\u2550\u255D \u255A\u2550\u2550\u2550\u2550\u2550\u255D  \u255A\u2550\u2550\u255D\u255A\u2550\u2550\u255D \u255A\u2550\u2550\u2550\u2550\u2550\u2550\u255D\u255A\u2550\u255D  \u255A\u2550\u255D        \u2551
+\u2551                                                               \u2551
+\u2551   Interactive Mode - Just tell me what to make               \u2551
+\u2551                                                               \u2551
+\u255A\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u255D
+`));
+  console.log(chalk5.white("  Just type what you want. I'll make it happen.\n"));
+  console.log(chalk5.gray("  Examples:"));
+  console.log(chalk5.gray('    "make me a pitch deck for my AI startup"'));
+  console.log(chalk5.gray('    "make it more minimal"'));
+  console.log(chalk5.gray('    "change the color to blue"'));
+  console.log(chalk5.gray('    "preview" or "open"'));
+  console.log(chalk5.gray('    "exit" or "quit"\n'));
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout
+  });
+  const prompt = () => {
+    rl.question(chalk5.cyan("> "), async (input) => {
+      const trimmed = input.trim();
+      if (!trimmed) {
+        prompt();
+        return;
+      }
+      if (trimmed.toLowerCase() === "exit" || trimmed.toLowerCase() === "quit") {
+        console.log(chalk5.gray("\nBye! \u270C\uFE0F\n"));
+        rl.close();
+        process.exit(0);
+      }
+      if (trimmed.toLowerCase() === "preview" || trimmed.toLowerCase() === "open" || trimmed.toLowerCase() === "show") {
+        if (lastGeneratedHTML) {
+          console.log(chalk5.green("\n  Opening preview...\n"));
+          openPreview();
+        } else {
+          console.log(chalk5.yellow("\n  No design yet. Tell me what to make!\n"));
+        }
+        prompt();
+        return;
+      }
+      if (trimmed.toLowerCase().startsWith("cd ")) {
+        const dir = trimmed.slice(3).trim();
+        try {
+          process.chdir(dir);
+          outputDir = "./output";
+          console.log(chalk5.green(`
+  Changed to ${process.cwd()}
+`));
+        } catch {
+          console.log(chalk5.red(`
+  Can't cd to ${dir}
+`));
+        }
+        prompt();
+        return;
+      }
+      if (trimmed.toLowerCase() === "clear") {
+        conversationHistory = [];
+        lastGeneratedHTML = null;
+        console.log(chalk5.gray("\n  Conversation cleared.\n"));
+        prompt();
+        return;
+      }
+      const spinner = ora4({
+        text: "Thinking...",
+        color: "cyan"
+      }).start();
+      try {
+        const response = await chat(trimmed);
+        spinner.stop();
+        const formatted = formatResponse(response);
+        console.log("\n" + formatted + "\n");
+        if (response.includes("```html")) {
+          console.log(chalk5.gray("  Auto-opening preview...\n"));
+          openPreview();
+        }
+      } catch (error) {
+        spinner.stop();
+        if (error.message?.includes("API key")) {
+          console.log(chalk5.red('\n  No API key! Run: export ANTHROPIC_API_KEY="your-key"\n'));
+        } else {
+          console.log(chalk5.red(`
+  Error: ${error.message}
+`));
+        }
+      }
+      prompt();
+    });
+  };
+  prompt();
+}
+
 // src/cli/index.ts
 var program = new Command();
 var banner = `
@@ -804,9 +1005,9 @@ var banner = `
 \u2551                                                               \u2551
 \u255A\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u255D
 `;
-program.name("browsr").description("browsr - AI-powered design builder that outputs real HTML/CSS/JS").version("1.0.0").addHelpText("beforeAll", chalk5.cyan(banner));
+program.name("browsr").description("browsr - AI-powered design builder that outputs real HTML/CSS/JS").version("1.0.0").addHelpText("beforeAll", chalk6.cyan(banner));
 program.command("create").description("Create a new design from a natural language prompt").argument("<prompt>", "Description of what to create").option("-t, --type <type>", "Design type (pitch-deck, resume, poster, instagram, youtube-thumb, etc.)").option("-s, --style <style>", "Style variant (minimal, bold, elegant, modern, professional)", "professional").option("-o, --output <dir>", "Output directory", "./output").option("--no-preview", "Skip automatic preview").action(async (prompt, options) => {
-  console.log(chalk5.cyan(banner));
+  console.log(chalk6.cyan(banner));
   console.log();
   await create(prompt, options);
 });
@@ -814,7 +1015,7 @@ program.command("preview").description("Start a preview server for your design")
 program.command("deploy").description("Deploy your design to Cloudflare Pages").argument("[path]", "Path to the design directory", "./output").option("-n, --name <name>", "Project name for the deployment").action(deploy);
 program.command("export").description("Export your design to PDF or PNG").argument("[path]", "Path to the design directory", "./output").option("-f, --format <format>", "Export format (pdf, png)", "pdf").option("-o, --output <file>", "Output file path").action(exportDesign);
 program.command("types").description("List all available design types").action(() => {
-  console.log(chalk5.cyan("\nAvailable design types:\n"));
+  console.log(chalk6.cyan("\nAvailable design types:\n"));
   const types = [
     { name: "pitch-deck", desc: "Startup pitch deck for investors" },
     { name: "resume", desc: "Professional resume/CV" },
@@ -833,28 +1034,12 @@ program.command("types").description("List all available design types").action((
     { name: "certificate", desc: "Achievement certificate" }
   ];
   types.forEach(({ name, desc }) => {
-    console.log(`  ${chalk5.green(name.padEnd(18))} ${chalk5.gray(desc)}`);
+    console.log(`  ${chalk6.green(name.padEnd(18))} ${chalk6.gray(desc)}`);
   });
-  console.log(chalk5.cyan("\nStyles available: ") + chalk5.white("minimal, bold, elegant, modern, professional"));
-  console.log(chalk5.gray('\nExample: browsr create "A pitch deck for my AI startup" -t pitch-deck -s modern\n'));
+  console.log(chalk6.cyan("\nStyles available: ") + chalk6.white("minimal, bold, elegant, modern, professional"));
+  console.log(chalk6.gray('\nExample: browsr create "A pitch deck for my AI startup" -t pitch-deck -s modern\n'));
 });
-program.command("start", { isDefault: true }).description("Start browsr in interactive mode").action(async () => {
-  console.log(chalk5.cyan(banner));
-  console.log();
-  console.log(chalk5.white("Welcome to browsr!"));
-  console.log(chalk5.gray("Create professional designs from natural language.\n"));
-  console.log(chalk5.yellow("Quick start:"));
-  console.log(chalk5.gray('  browsr create "a pitch deck for my AI startup"'));
-  console.log(chalk5.gray('  browsr create "a resume for a senior engineer" -t resume'));
-  console.log(chalk5.gray('  browsr create "an instagram post for product launch" -t instagram'));
-  console.log();
-  console.log(chalk5.yellow("Commands:"));
-  console.log(chalk5.gray("  create <prompt>  Generate a new design"));
-  console.log(chalk5.gray("  preview [path]   Preview a design locally"));
-  console.log(chalk5.gray("  deploy [path]    Deploy to Cloudflare Pages"));
-  console.log(chalk5.gray("  export [path]    Export to PDF/PNG"));
-  console.log(chalk5.gray("  types            List all design types"));
-  console.log(chalk5.gray("  help             Show detailed help"));
-  console.log();
+program.command("chat", { isDefault: true }).description("Start browsr in interactive chat mode (like Claude Code)").action(async () => {
+  await startChat();
 });
 program.parse();

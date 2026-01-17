@@ -10,6 +10,7 @@ import { create } from './commands/create';
 import { preview } from './commands/preview';
 import { deploy } from './commands/deploy';
 import { exportDesign } from './commands/export';
+import { startChat } from './commands/chat';
 
 const program = new Command();
 
@@ -109,28 +110,12 @@ program
     console.log(chalk.gray('\nExample: browsr create "A pitch deck for my AI startup" -t pitch-deck -s modern\n'));
   });
 
-// Interactive mode (default when no command)
+// Chat mode - interactive like Claude Code (default)
 program
-  .command('start', { isDefault: true })
-  .description('Start browsr in interactive mode')
+  .command('chat', { isDefault: true })
+  .description('Start browsr in interactive chat mode (like Claude Code)')
   .action(async () => {
-    console.log(chalk.cyan(banner));
-    console.log();
-    console.log(chalk.white('Welcome to browsr!'));
-    console.log(chalk.gray('Create professional designs from natural language.\n'));
-    console.log(chalk.yellow('Quick start:'));
-    console.log(chalk.gray('  browsr create "a pitch deck for my AI startup"'));
-    console.log(chalk.gray('  browsr create "a resume for a senior engineer" -t resume'));
-    console.log(chalk.gray('  browsr create "an instagram post for product launch" -t instagram'));
-    console.log();
-    console.log(chalk.yellow('Commands:'));
-    console.log(chalk.gray('  create <prompt>  Generate a new design'));
-    console.log(chalk.gray('  preview [path]   Preview a design locally'));
-    console.log(chalk.gray('  deploy [path]    Deploy to Cloudflare Pages'));
-    console.log(chalk.gray('  export [path]    Export to PDF/PNG'));
-    console.log(chalk.gray('  types            List all design types'));
-    console.log(chalk.gray('  help             Show detailed help'));
-    console.log();
+    await startChat();
   });
 
 program.parse();
