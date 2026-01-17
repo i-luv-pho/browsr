@@ -1,0 +1,323 @@
+/*
+ * Typography System
+ * Fluid type scale with semantic classes
+ */
+
+/* Import fonts (or use system fonts) */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Source+Serif+Pro:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+/* ═══════════════════════════════════════════════════════════════
+   HEADING STYLES
+   ═══════════════════════════════════════════════════════════════ */
+
+.heading-1,
+h1 {
+  font-size: var(--text-5xl);
+  font-weight: var(--font-bold);
+  line-height: var(--leading-tight);
+  letter-spacing: var(--tracking-tight);
+  color: var(--color-text);
+}
+
+.heading-2,
+h2 {
+  font-size: var(--text-4xl);
+  font-weight: var(--font-bold);
+  line-height: var(--leading-tight);
+  letter-spacing: var(--tracking-tight);
+  color: var(--color-text);
+}
+
+.heading-3,
+h3 {
+  font-size: var(--text-3xl);
+  font-weight: var(--font-semibold);
+  line-height: var(--leading-snug);
+  letter-spacing: var(--tracking-tight);
+  color: var(--color-text);
+}
+
+.heading-4,
+h4 {
+  font-size: var(--text-2xl);
+  font-weight: var(--font-semibold);
+  line-height: var(--leading-snug);
+  color: var(--color-text);
+}
+
+.heading-5,
+h5 {
+  font-size: var(--text-xl);
+  font-weight: var(--font-semibold);
+  line-height: var(--leading-snug);
+  color: var(--color-text);
+}
+
+.heading-6,
+h6 {
+  font-size: var(--text-lg);
+  font-weight: var(--font-semibold);
+  line-height: var(--leading-normal);
+  color: var(--color-text);
+}
+
+/* Display headings - for hero sections */
+.display-1 {
+  font-size: var(--text-7xl);
+  font-weight: var(--font-extrabold);
+  line-height: var(--leading-none);
+  letter-spacing: var(--tracking-tighter);
+}
+
+.display-2 {
+  font-size: var(--text-6xl);
+  font-weight: var(--font-extrabold);
+  line-height: var(--leading-none);
+  letter-spacing: var(--tracking-tighter);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   BODY TEXT STYLES
+   ═══════════════════════════════════════════════════════════════ */
+
+.body-lg {
+  font-size: var(--text-lg);
+  line-height: var(--leading-relaxed);
+  color: var(--color-text);
+}
+
+.body,
+p {
+  font-size: var(--text-base);
+  line-height: var(--leading-relaxed);
+  color: var(--color-text);
+}
+
+.body-sm {
+  font-size: var(--text-sm);
+  line-height: var(--leading-normal);
+  color: var(--color-text);
+}
+
+.body-xs {
+  font-size: var(--text-xs);
+  line-height: var(--leading-normal);
+  color: var(--color-text-secondary);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   SEMANTIC TEXT STYLES
+   ═══════════════════════════════════════════════════════════════ */
+
+.lead {
+  font-size: var(--text-xl);
+  line-height: var(--leading-relaxed);
+  color: var(--color-text-secondary);
+}
+
+.subtitle {
+  font-size: var(--text-lg);
+  font-weight: var(--font-medium);
+  color: var(--color-text-secondary);
+}
+
+.caption {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.overline {
+  font-size: var(--text-xs);
+  font-weight: var(--font-semibold);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-widest);
+  color: var(--color-text-muted);
+}
+
+.label {
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  color: var(--color-text);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   INLINE STYLES
+   ═══════════════════════════════════════════════════════════════ */
+
+strong,
+.font-bold {
+  font-weight: var(--font-bold);
+}
+
+em,
+.font-italic {
+  font-style: italic;
+}
+
+.font-medium {
+  font-weight: var(--font-medium);
+}
+
+.font-semibold {
+  font-weight: var(--font-semibold);
+}
+
+.font-light {
+  font-weight: var(--font-light);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   LINK STYLES
+   ═══════════════════════════════════════════════════════════════ */
+
+a,
+.link {
+  color: var(--color-primary-600);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  transition: color var(--duration-150) var(--ease-out);
+}
+
+a:hover,
+.link:hover {
+  color: var(--color-primary-700);
+}
+
+.link-subtle {
+  color: var(--color-text-secondary);
+  text-decoration: none;
+}
+
+.link-subtle:hover {
+  color: var(--color-text);
+  text-decoration: underline;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   CODE & PREFORMATTED
+   ═══════════════════════════════════════════════════════════════ */
+
+code {
+  font-family: var(--font-mono);
+  font-size: 0.875em;
+  background-color: var(--color-surface-muted);
+  padding: 0.125em 0.375em;
+  border-radius: var(--radius-sm);
+}
+
+pre {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  line-height: var(--leading-relaxed);
+  background-color: var(--color-neutral-900);
+  color: var(--color-neutral-100);
+  padding: var(--space-4);
+  border-radius: var(--radius-lg);
+  overflow-x: auto;
+}
+
+pre code {
+  background: none;
+  padding: 0;
+  font-size: inherit;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   LISTS
+   ═══════════════════════════════════════════════════════════════ */
+
+ul,
+ol {
+  padding-left: var(--space-6);
+}
+
+li {
+  margin-bottom: var(--space-2);
+}
+
+li::marker {
+  color: var(--color-text-muted);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   BLOCKQUOTE
+   ═══════════════════════════════════════════════════════════════ */
+
+blockquote {
+  border-left: 4px solid var(--color-primary-500);
+  padding-left: var(--space-4);
+  margin: var(--space-6) 0;
+  font-size: var(--text-lg);
+  font-style: italic;
+  color: var(--color-text-secondary);
+}
+
+blockquote cite {
+  display: block;
+  margin-top: var(--space-2);
+  font-size: var(--text-sm);
+  font-style: normal;
+  color: var(--color-text-muted);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   TEXT COLOR UTILITIES
+   ═══════════════════════════════════════════════════════════════ */
+
+.text-primary { color: var(--color-text); }
+.text-secondary { color: var(--color-text-secondary); }
+.text-muted { color: var(--color-text-muted); }
+.text-subtle { color: var(--color-text-subtle); }
+.text-accent { color: var(--color-primary-600); }
+.text-success { color: var(--color-success); }
+.text-warning { color: var(--color-warning); }
+.text-error { color: var(--color-error); }
+
+/* ═══════════════════════════════════════════════════════════════
+   TEXT ALIGNMENT
+   ═══════════════════════════════════════════════════════════════ */
+
+.text-left { text-align: left; }
+.text-center { text-align: center; }
+.text-right { text-align: right; }
+.text-justify { text-align: justify; }
+
+/* ═══════════════════════════════════════════════════════════════
+   PROSE (for long-form content)
+   ═══════════════════════════════════════════════════════════════ */
+
+.prose {
+  max-width: 65ch;
+}
+
+.prose > * + * {
+  margin-top: var(--space-4);
+}
+
+.prose h1,
+.prose h2,
+.prose h3,
+.prose h4 {
+  margin-top: var(--space-8);
+  margin-bottom: var(--space-4);
+}
+
+.prose h1:first-child,
+.prose h2:first-child,
+.prose h3:first-child {
+  margin-top: 0;
+}
+
+.prose p {
+  margin-bottom: var(--space-4);
+}
+
+.prose ul,
+.prose ol {
+  margin: var(--space-4) 0;
+}
+
+.prose img {
+  margin: var(--space-6) 0;
+  border-radius: var(--radius-lg);
+}
