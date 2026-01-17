@@ -1,5 +1,5 @@
 {
-  "name": "browsr",
+  "name": "@i-luv-pho/browsr",
   "version": "1.0.0",
   "description": "Terminal AI builder - Canva competitor that outputs real HTML/CSS/JS",
   "type": "module",
