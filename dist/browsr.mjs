@@ -796,8 +796,17 @@ import { execSync as execSync2 } from "child_process";
 import * as http from "http";
 import * as os from "os";
 import Groq from "groq-sdk";
-var groq = new Groq();
 var VERSION = "2.1.0";
+var _groq = null;
+function getGroq() {
+  if (!_groq) {
+    if (!process.env.GROQ_API_KEY) {
+      throw new Error("GROQ_API_KEY not set");
+    }
+    _groq = new Groq();
+  }
+  return _groq;
+}
 var g = chalk5.green;
 var gg = chalk5.greenBright;
 var gd = chalk5.gray;
@@ -884,7 +893,7 @@ ${html}
   let retries = config.retries;
   while (retries >= 0) {
     try {
-      const stream = await groq.chat.completions.create({
+      const stream = await getGroq().chat.completions.create({
         model: config.model,
         max_tokens: 8e3,
         messages: apiMsgs,

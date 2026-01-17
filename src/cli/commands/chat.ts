@@ -12,9 +12,19 @@ import * as http from 'http';
 import * as os from 'os';
 import Groq from 'groq-sdk';
 
-// Uses GROQ_API_KEY from environment (set by installer)
-const groq = new Groq();
 const VERSION = '2.1.0';
+
+// Lazy-init Groq client (only when API key exists and needed)
+let _groq: Groq | null = null;
+function getGroq(): Groq {
+  if (!_groq) {
+    if (!process.env.GROQ_API_KEY) {
+      throw new Error('GROQ_API_KEY not set');
+    }
+    _groq = new Groq();
+  }
+  return _groq;
+}
 
 // Hacker green theme
 const g = chalk.green;
@@ -143,7 +153,7 @@ async function streamChat(input: string): Promise<string> {
   while (retries >= 0) {
     try {
       // Stream for speed - Groq is blazing fast
-      const stream = await groq.chat.completions.create({
+      const stream = await getGroq().chat.completions.create({
         model: config.model,
         max_tokens: 8000,
         messages: apiMsgs,
